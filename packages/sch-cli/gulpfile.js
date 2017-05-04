@@ -1,0 +1,18 @@
+'use strict';
+
+const babel = require('gulp-babel');
+const flow = require('gulp-flowtype');
+const fs = require('fs-extra');
+const gulp = require('gulp');
+const path = require('path');
+
+gulp.task('build', ['clean'], () => {
+    return gulp.src(path.join(__dirname, 'src/**/*.js'))
+               .pipe(flow())
+               .pipe(babel())
+               .pipe(gulp.dest(path.join(__dirname, 'lib')));
+});
+
+gulp.task('clean', (done) => {
+    fs.remove(path.join(__dirname, 'lib'), done);
+});

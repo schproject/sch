@@ -1,0 +1,25 @@
+{
+  "name": "sch-cli",
+  "version": "0.0.0",
+  "description": "Sch command line",
+  "author": "Max Englander <max.englander@gmail.com>",
+  "license": "MIT",
+  "repository": "https://github.com/schproject/sch",
+  "engines": {
+    "node": ">=6.0"
+  },
+  "dependencies": {},
+  "bin": {
+    "sch": "./bin/sch.js"
+  },
+  "devDependencies": {
+    "fs-extra": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-flow": "^1.4.1",
+    "gulp-flowtype": "^1.0.0",
+    "gulp-typescript": "^3.1.6",
+    "merge-stream": "^1.0.1",
+    "typescript": "^2.3.2"
+  }
+}
