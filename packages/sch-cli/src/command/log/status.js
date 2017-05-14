@@ -4,7 +4,7 @@
 
 import type { Command, Process } from '../types';
 
-export default class Use implements Command {
+export default class Status implements Command {
     run (process: Process) {
     }
 }

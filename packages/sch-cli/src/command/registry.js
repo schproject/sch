@@ -24,12 +24,14 @@ export default class Registry implements Command {
         this.commands[name] = command;
     }
 
-    get (name: string) {
-        if (!this.commands.hasOwnProperty(name)) {
-            throw new NoSuchCommandError(name);
+    getOrDefault (name: string) {
+        if (this.commands.hasOwnProperty(name)) {
+            return this.commands[name];
+        } else if (this.commands.hasOwnProperty('default')) {
+            return this.commands['default'];
         }
 
-        return this.commands[name];
+        throw new NoSuchCommandError(name);
     }
 
     run (process: Process) {
@@ -38,8 +40,9 @@ export default class Registry implements Command {
             ...options
         ] = process.argv;
 
-        this.get(name).run({
+        this.getOrDefault(name).run({
             argv: options,
+            cwd: process.cwd,
             env: process.env
         });
     }
