@@ -2,6 +2,6 @@
 
 'use strict';
 
-const run = require('../lib/run');
+const cli = require('../lib/cli');
 
-run['default'](process);
+cli.run(process);
