@@ -1,0 +1,25 @@
+{
+  "name": "sch-store-google-drive",
+  "version": "0.0.0",
+  "description": "Sch Google Drive store",
+  "author": "Max Englander <max.englander@gmail.com>",
+  "license": "MIT",
+  "repository": "https://github.com/schproject/sch/tree/master/packages/sch-store-google-drive",
+  "engines": {
+    "node": ">=6.0"
+  },
+  "dependencies": {
+     "sch-core": "^0.0.0"
+  },
+  "devDependencies": {
+    "babel-plugin-syntax-flow": "^6.18.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-flow": "^6.23.0",
+    "flow-bin": "^0.39.0",
+    "flow-reporter": "https://github.com/maxenglander/flow-reporter/tarball/4f248caa580a41eff14f3db5b452be3254197a5b",
+    "fs-extra": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-flowtype": "https://github.com/charliedowler/gulp-flowtype/tarball/e093f9c0c132370eefe493ba43e817b6bcd14583"
+  }
+}

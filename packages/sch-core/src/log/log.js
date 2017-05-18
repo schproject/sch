@@ -2,12 +2,12 @@
  * @flow
  */
 
-import type { Driver } from './driver/types';
+import type { Store } from '../store/types';
 
 export default class Log {
-    driver: Driver;
+    store: Store;
 
-    constructor (driver: Driver) {
-        this.driver = driver;
+    constructor (store: Store) {
+        this.store = store;
     }
 }

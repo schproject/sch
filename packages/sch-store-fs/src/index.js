@@ -4,9 +4,13 @@
 
 import fs from 'fs';
 
-import type { Driver } from './types';
+import type { Store } from 'sch-core';
 
-export default class FS implements Driver {
+export default class FS implements Store {
+    ls (path: string): Promise<Array<string>> {
+        throw new Error('Not yet implemented');
+    }
+
     mkdir (path: string): Promise<void> {
         throw new Error('Not yet implemented');
     }
