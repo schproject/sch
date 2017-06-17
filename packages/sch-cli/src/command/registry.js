@@ -2,48 +2,42 @@
  * @flow
  */
 
-import type { Command, Process } from './types';
+import type {
+    Command
+} from './types';
+
+import type { Process } from '../types';
 
 import {
-    DuplicateCommandNameError,
     NoSuchCommandError
 } from './errors';
 
-export default class Registry implements Command {
-    commands: { [name: string]: Command };
+export const DEFAULT_KEY = '_default';
 
-    constructor (commands: { [name: string]: Command }) {
-        this.commands = commands;
+export default class Registry {
+    entries: { [name: string]: Command|Registry };
+
+    constructor (entries: { [name: string]: Command|Registry }) {
+        this.entries = entries;
     }
 
-    add (name: string, command: Command) {
-        if (this.commands.hasOwnProperty(name)) {
-            throw new DuplicateCommandNameError(name);
+    find (...keys: Array<string>): Command {
+        const [ firstKey, ...otherKeys ] = keys || [ DEFAULT_KEY ];
+
+        let entry: Command|Registry;
+
+        if (this.entries.hasOwnProperty(firstKey)) {
+            entry = this.entries[firstKey];
+        } else if (this.entries.hasOwnProperty(DEFAULT_KEY)) {
+            entry = this.entries[DEFAULT_KEY];
+        } else {
+            throw new NoSuchCommandError(firstKey);
         }
-
-        this.commands[name] = command;
-    }
-
-    getOrDefault (name: string) {
-        if (this.commands.hasOwnProperty(name)) {
-            return this.commands[name];
-        } else if (this.commands.hasOwnProperty('default')) {
-            return this.commands['default'];
+        
+        if (entry instanceof Registry) {
+            return entry.find(...otherKeys);
+        } else {
+            return entry;
         }
-
-        throw new NoSuchCommandError(name);
-    }
-
-    run (process: Process) {
-        const [
-            name,
-            ...options
-        ] = process.argv;
-
-        this.getOrDefault(name).run({
-            argv: options,
-            cwd: process.cwd,
-            env: process.env
-        });
     }
 }

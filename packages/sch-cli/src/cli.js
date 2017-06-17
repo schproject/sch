@@ -2,13 +2,10 @@
  * @flow
  */
 
-import command from './command';
-import type { Process } from './command/types';
+import type { Command } from './command/types';
+import type { Process } from './types';
+import { registry } from './command';
 
-export function run (process: Process) {
-    command.run({
-        argv: process.argv.slice(2),
-        cwd: process.cwd,
-        env: process.env
-    });
+export function run ({ argv, cwd, env }: Process) {
+    const command: Command = registry.find(argv.slice(2));
 }

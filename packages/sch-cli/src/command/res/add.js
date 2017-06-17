@@ -2,9 +2,12 @@
  * @flow
  */
 
-import type { Command, Process } from '../types';
+import type { Command } from '../types';
+import type { Process } from '../../types';
 
-export default class Add implements Command {
+const add: Command = {
     run (process: Process) {
     }
 }
+
+export default add;

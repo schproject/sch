@@ -2,17 +2,8 @@
  * @flow
  */
 
-export interface Process {
-    argv: Array<string>;
-    cwd: () => string;
-    env: { [key: string]: string };
-}
+import type { Process } from '../types';
 
 export interface Command {
     run (process: Process): void;
-}
-
-class A implements Command {
-    run(process: Process) {
-    }
 }

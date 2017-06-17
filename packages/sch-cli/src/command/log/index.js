@@ -2,21 +2,19 @@
  * @flow
  */
 
-import Registry from '../registry';
+import Registry, {
+    DEFAULT_KEY
+} from '../registry';
 
-import Init from './init';
-import Status from './status';
-import Use from './use';
+import init from './init';
+import status from './status';
+import use from './use';
 
-export default class Log extends Registry {
-    constructor () {
-        const status = new Status();
+const entries = { };
 
-        super({
-            'default': status,
-            init: new Init(),
-            status: status,
-            use: new Use()
-        });
-    }
-}
+entries[DEFAULT_KEY] = status;
+entries.init = init;
+entries.status = status;
+entries.use = use;
+
+export default new Registry(entries);

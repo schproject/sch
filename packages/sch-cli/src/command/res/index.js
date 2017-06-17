@@ -4,12 +4,8 @@
 
 import Registry from '../registry';
 
-import Add from './add';
+import add from './add';
 
-export default class Res extends Registry {
-    constructor () {
-        super({
-            add: new Add()
-        });
-    }
-}
+const registry = new Registry({ add });
+
+export default registry;
