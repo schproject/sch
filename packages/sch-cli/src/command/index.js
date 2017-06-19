@@ -4,10 +4,6 @@
 
 import Registry from './registry';
 
-import Log from './log';
-import Res from './res';
+import log from './log';
 
-export const registry = new Registry({
-    log: new Log(),
-    res: new Res()
-});
+export const registry = new Registry({ log });

@@ -34,10 +34,8 @@ export default class Registry {
             throw new NoSuchCommandError(firstKey);
         }
         
-        if (entry instanceof Registry) {
-            return entry.find(...otherKeys);
-        } else {
-            return entry;
-        }
+        return entry instanceof Registry
+            ? entry.find(...otherKeys)
+            : entry;
     }
 }
