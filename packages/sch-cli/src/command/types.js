@@ -14,14 +14,10 @@ export interface CommandSpec {
     options?: Array<OptionSpec<*>>;
 }
 
-export type DefaultValue<T> = T | DefaultValueSupplier<T>;
-
-type DefaultValueSupplier<T> = (Process) => T;
-
 export interface OptionSpec<T: Boolean | Number | String> {
-    defaultValue?: DefaultValue<T>;
-    optional?: boolean;
+    defaultValue?: T;
     multiple?: boolean;
     name: string;
+    optional?: boolean;
     type: Class<T>;
 }

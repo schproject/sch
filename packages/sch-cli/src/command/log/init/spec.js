@@ -3,18 +3,14 @@
  */
 
 import type {
-    CommandSpec,
-    DefaultValue,
-    OptionSpec
+    CommandSpec
 } from '../../types';
 
-const defaultOptionValue: DefaultValue<String> = ({ cwd }) => new String(cwd());
+import { builder } from '../../option';
 
-const defaultOption: OptionSpec<String> = {
-    defaultValue: defaultOptionValue,
-    name: 'path',
-    type: String
-};
+const defaultOption = builder(String)
+    .name('path')
+    .build();
 
 const spec: CommandSpec = { defaultOption };
 
