@@ -8,6 +8,4 @@ import Registry, {
 
 import init from './init';
 
-const entries = { init };
-
-export default new Registry(entries);
+export default new Registry({ init });

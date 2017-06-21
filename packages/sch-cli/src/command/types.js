@@ -6,18 +6,14 @@ import type { Process } from '../types';
 
 export interface Command {
     run (process: Process): void;
-    spec: CommandSpec;
+    options: Array<Option<*>>;
 }
 
-export interface CommandSpec {
-    defaultOption?: OptionSpec<*>;
-    options?: Array<OptionSpec<*>>;
-}
-
-export interface OptionSpec<T: Boolean | Number | String> {
-    defaultValue?: T;
+export interface Option<T: boolean | number | string> {
+    defaultValue?: T | (Process => T);
+    last?: boolean;
     multiple?: boolean;
     name: string;
     optional?: boolean;
-    type: Class<T>;
+    type: T;
 }
