@@ -2,29 +2,60 @@
  * @flow
  */
 
-import type { Option } from './types';
+import type {
+    LineSpec,
+    Option,
+    OptionType
+} from './types';
 import type { Process } from '../types';
 
-class OptionBuilder<T: boolean | number | string> {
+class LineSpecBuilder {
+    _arg: Option<*>;
+    _flags: Map<string, Option<*>>;
+
+    constructor () {
+        this._flags = new Map();
+    }
+
+    arg (arg: Option<*>): LineSpecBuilder {
+        this._arg = arg;
+        return this;
+    }
+
+    build (): LineSpec {
+        const lineSpec: LineSpec = {
+            arg: this._arg,
+            flags: Array.from(this._flags).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {})
+        };
+
+        return lineSpec;
+    }
+
+    flag (name: string, option: Option<*>): LineSpecBuilder {
+        this._flags.set(name, option);
+        return this;
+    }
+}
+
+class OptionBuilder<T: OptionType> {
     _defaultValue: T | (Process => T);
-    _last: boolean;
     _multiple: boolean;
     _optional: boolean;
-    _name: string;
-    _type: T;
+    _sample: T;
 
-    constructor (type: T) {
-        this._type = type;
+    constructor (sample: T) {
+        this._sample = sample;
     }
 
     build (): Option<T> {
         const spec: Option<T> = {
             defaultValue: this._defaultValue,
-            last: this._last,
             multiple: this._multiple,
-            name: this._name,
             optional: this._optional,
-            type: this._type,
+            sample: this._sample,
         }
 
         return spec;
@@ -35,18 +66,8 @@ class OptionBuilder<T: boolean | number | string> {
         return this;
     }
 
-    last (last: boolean = true): OptionBuilder<T> {
-        this._last = last;
-        return this;
-    }
-
     multiple (multiple: boolean = true): OptionBuilder<T> {
         this._multiple = multiple;
-        return this;
-    }
-
-    name (name: string): OptionBuilder<T> {
-        this._name = name;
         return this;
     }
 
@@ -56,13 +77,19 @@ class OptionBuilder<T: boolean | number | string> {
     }
 }
 
+export function lineSpec () {
+    return new LineSpecBuilder();
+}
+
 export const option = {
     boolean (): OptionBuilder<boolean> {
         return new OptionBuilder(true);
     },
+
     number (): OptionBuilder<number> {
         return new OptionBuilder(0);
     },
+
     string (): OptionBuilder<string> {
         return new OptionBuilder('');
     }

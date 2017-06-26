@@ -4,18 +4,27 @@
 
 import type { Command } from '../types';
 import type { Process } from '../../types';
-import { option } from '../builder';
-
-const path = option.string()
-    .defaultValue(({ cwd }: Process) => cwd())
-    .name('path')
-    .build();
-
-function run () {}
+import {
+    lineSpec,
+    option
+} from '../builder';
 
 const init: Command = {
-    options: [ path ],
-    run
+    lineSpec: lineSpec()
+        .arg(option.string()
+            .defaultValue(({ cwd }: Process) => cwd())
+            .build())
+        .flag('-store-config',
+            option.string()
+                .multiple()
+                .build())
+        .flag('-store-type',
+            option.string()
+                .build())
+        .build(),
+    run (process: Process) {}
 };
+
+console.log(init);
 
 export default init;
