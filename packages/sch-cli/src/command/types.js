@@ -4,11 +4,6 @@
 
 import type { Process } from '../types';
 
-export type ParsedArgMultipleValue
-    = Array<boolean> | Array<number> | Array<string>;
-export type ParsedArgSingleValue = boolean | number | string;
-export type ParsedArgValue = ParsedArgMultipleValue | ParsedArgSingleValue;
-
 export interface Command {
     lineSpec: LineSpec;
     run (process: Process): void;
