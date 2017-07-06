@@ -34,19 +34,21 @@ class LineSpecBuilder {
         return lineSpec;
     }
 
-    flag (name: string, option: Option<*>): LineSpecBuilder {
-        this._flags.set(name, option);
+    flag (option: Option<*>): LineSpecBuilder {
+        this._flags.set(option.name, option);
         return this;
     }
 }
 
 class OptionBuilder<T: OptionType> {
     _defaultValue: T | (Process => T);
+    _name: string;
     _multiple: boolean;
     _optional: boolean;
     _sample: T;
 
-    constructor (sample: T) {
+    constructor (name: string, sample: T) {
+        this._name = name;
         this._sample = sample;
     }
 
@@ -54,6 +56,7 @@ class OptionBuilder<T: OptionType> {
         const spec: Option<T> = {
             defaultValue: this._defaultValue,
             multiple: this._multiple,
+            name: this._name,
             optional: this._optional,
             sample: this._sample,
         }
@@ -82,15 +85,15 @@ export function lineSpec () {
 }
 
 export const option = {
-    boolean (): OptionBuilder<boolean> {
-        return new OptionBuilder(true);
+    boolean (name: string): OptionBuilder<boolean> {
+        return new OptionBuilder(name, true);
     },
 
-    number (): OptionBuilder<number> {
-        return new OptionBuilder(0);
+    number (name: string): OptionBuilder<number> {
+        return new OptionBuilder(name, 0);
     },
 
-    string (): OptionBuilder<string> {
-        return new OptionBuilder('');
+    string (name: string): OptionBuilder<string> {
+        return new OptionBuilder(name, '');
     }
 }

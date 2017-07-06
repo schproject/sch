@@ -17,6 +17,7 @@ export interface LineSpec {
 export interface Option<T: OptionType> {
     defaultValue: T | (Process => T);
     multiple: boolean;
+    name: string;
     optional: boolean;
     sample: T;
 }

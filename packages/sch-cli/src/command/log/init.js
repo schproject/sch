@@ -11,15 +11,13 @@ import {
 
 const init: Command = {
     lineSpec: lineSpec()
-        .arg(option.string()
+        .arg(option.string('path')
             .defaultValue(({ cwd }: Process) => cwd())
             .build())
-        .flag('-store-config',
-            option.string()
+        .flag(option.string('-store-config')
                 .multiple()
                 .build())
-        .flag('-store-type',
-            option.string()
+        .flag(option.string('-store-type')
                 .build())
         .build(),
     run (process: Process) {}

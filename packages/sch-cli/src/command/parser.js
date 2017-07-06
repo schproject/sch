@@ -2,7 +2,10 @@
  * @flow
  */
 
-import { IllegalOptionSampleType } from './errors';
+import {
+    MissingOptionArgumentError,
+    ParserError
+} from './errors';
 
 import type {
     LineSpec,
@@ -84,16 +87,21 @@ class Refiner<T: OptionType> {
 }
 
 export function parse (args: Array<string>, lineSpec: LineSpec): any {
-    let flag: ?string = undefined;
-    const parsers: Map<string, Parser<*>> = new Map(); 
+    const errors: Array<ParserError<*>> = [],
+        parsers: Map<string, Parser<*>> = new Map(); 
 
+    let flag: ?string = undefined;
+
+    // Parse all args
     for (let index = 0; index < args.length; index++) {
         const arg = args[index];
 
         if (arg.startsWith('-')) {
             flag = arg;
+
             if (!parsers.get(arg)) {
                 const option: Option<*> = lineSpec.flags[arg];
+
                 if (option) {
                     const parser: Parser<*> = new Parser(option);
                     parsers.set(arg, parser);
