@@ -4,29 +4,29 @@
 
 import type {
     LineSpec,
-    Option,
+    OptionSpec,
     OptionType
-} from './types';
+} from '../parser';
 import type { Process } from '../types';
 
 class LineSpecBuilder {
-    _args: Array<Option<*>>;
-    _flags: Map<string, Option<*>>;
+    _argSpecs: Array<OptionSpec<*>>;
+    _flagSpecs: Map<string, OptionSpec<*>>;
 
     constructor () {
-        this._args = [];
-        this._flags = new Map();
+        this._argSpecs= [];
+        this._flagSpecs = new Map();
     }
 
-    arg (arg: Option<*>): LineSpecBuilder {
-        this._args.push(arg);
+    arg (arg: OptionSpec<*>): LineSpecBuilder {
+        this._argSpecs.push(arg);
         return this;
     }
 
     build (): LineSpec {
         const lineSpec: LineSpec = {
-            args: this._args.slice(),
-            flags: Array.from(this._flags).reduce((obj, [key, value]) => {
+            argSpecs: this._argSpecs.slice(),
+            flagSpecs: Array.from(this._flagSpecs).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
             }, {})
@@ -35,14 +35,14 @@ class LineSpecBuilder {
         return lineSpec;
     }
 
-    flag (option: Option<*>): LineSpecBuilder {
-        this._flags.set(option.name, option);
+    flag (option: OptionSpec<*>): LineSpecBuilder {
+        this._flagSpecs.set(option.name, option);
         return this;
     }
 }
 
 class OptionBuilder<T: OptionType> {
-    _defaultValue: T | (Process => T);
+    _defaultValue: T | Process => T;
     _name: string;
     _multiple: boolean;
     _optional: boolean;
@@ -53,8 +53,8 @@ class OptionBuilder<T: OptionType> {
         this._sample = sample;
     }
 
-    build (): Option<T> {
-        const spec: Option<T> = {
+    build (): OptionSpec<T> {
+        const spec: OptionSpec<T> = {
             defaultValue: this._defaultValue,
             multiple: this._multiple,
             name: this._name,
@@ -65,7 +65,7 @@ class OptionBuilder<T: OptionType> {
         return spec;
     }
 
-    defaultValue (defaultValue: T | (Process => T)): OptionBuilder<T> {
+    defaultValue (defaultValue: T | Process => T): OptionBuilder<T> {
         this._defaultValue = defaultValue;
         return this;
     }

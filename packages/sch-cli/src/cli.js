@@ -4,14 +4,13 @@
 
 import type { Command } from './command/types';
 import type { Process } from './types';
-import {
-    parse,
-    registry
-} from './command';
+import { createParser } from './parser';
+import { registry } from './command';
 
 export function run ({ argv, cwd, env }: Process) {
     const rawArgs = argv.slice(2),
-        command = registry.find(...rawArgs);
+        { argIndex, command } = registry.find(...rawArgs),
+        parser = createParser();
 
-    parse(rawArgs, command.lineSpec);
+    parser.parse(rawArgs.slice(argIndex), command.lineSpec);
 }

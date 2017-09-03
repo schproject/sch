@@ -21,7 +21,7 @@ export default class Registry {
         this.entries = entries;
     }
 
-    find (...keys: Array<string>): Command {
+    find (...keys: Array<string>): {| argIndex: number, command: Command |} {
         const [ firstKey, ...otherKeys ] = keys || [ DEFAULT_KEY ];
 
         let entry: Command|Registry;
@@ -34,8 +34,14 @@ export default class Registry {
             throw new NoSuchCommandError(firstKey);
         }
         
-        return entry instanceof Registry
-            ? entry.find(...otherKeys)
-            : entry;
+        if (entry instanceof Registry) {
+            const result = entry.find(...otherKeys);
+            return {
+                argIndex: 1 + result.argIndex,
+                command: result.command
+            };
+        } else {
+            return { argIndex: 1, command: entry };
+        }
     }
 }
