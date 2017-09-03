@@ -10,7 +10,7 @@ export interface Command {
 }
 
 export interface LineSpec {
-    arg: Option<*>;
+    args: Array<Option<*>>;
     flags: { [name: string]: Option<*> };
 }
 

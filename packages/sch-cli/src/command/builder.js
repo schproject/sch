@@ -10,21 +10,22 @@ import type {
 import type { Process } from '../types';
 
 class LineSpecBuilder {
-    _arg: Option<*>;
+    _args: Array<Option<*>>;
     _flags: Map<string, Option<*>>;
 
     constructor () {
+        this._args = [];
         this._flags = new Map();
     }
 
     arg (arg: Option<*>): LineSpecBuilder {
-        this._arg = arg;
+        this._args.push(arg);
         return this;
     }
 
     build (): LineSpec {
         const lineSpec: LineSpec = {
-            arg: this._arg,
+            args: this._args.slice(),
             flags: Array.from(this._flags).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;

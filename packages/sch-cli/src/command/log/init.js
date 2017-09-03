@@ -23,6 +23,4 @@ const init: Command = {
     run (process: Process) {}
 };
 
-console.log(init);
-
 export default init;

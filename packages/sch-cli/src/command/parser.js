@@ -90,30 +90,49 @@ export function parse (args: Array<string>, lineSpec: LineSpec): any {
     const errors: Array<ParserError<*>> = [],
         parsers: Map<string, Parser<*>> = new Map(); 
 
-    let flag: ?string = undefined;
-
     // Parse all args
-    for (let index = 0; index < args.length; index++) {
-        const arg = args[index];
+    const copyOfArgs = args.slice(),
+        finalArgs = [],
+        lastOptions: Array<Option<*>> = [];
 
+    let arg;
+    while(arg = copyOfArgs.shift()) {
+        let lastOption: ?Option<*> = lastOptions.shift();
+
+        // We have a new flag
         if (arg.startsWith('-')) {
-            flag = arg;
+            const option: Option<*> = lineSpec.flags[arg];
 
-            if (!parsers.get(arg)) {
-                const option: Option<*> = lineSpec.flags[arg];
-
-                if (option) {
-                    const parser: Parser<*> = new Parser(option);
-                    parsers.set(arg, parser);
+            if (!option) {
+                // This flag is not recognized!
+                console.warn('Flag', arg, 'is not recognized');
+            }
+            
+            if (lastOption) {
+                if (lastOption.sample != typeof true) {
+                    console.warn('No value was set for non-boolean flag', lastOption.name);
+                } else {
+                    parsers.set(arg, new Parser(option));
+                    lastOptions.push(option);
                 }
             }
-        } else if (flag) {
-            const parser: ?Parser<*> = parsers.get(flag);
-            if (parser) {
-                parser.parse(arg);
+        // We have a(n) (flag) argument
+        } else {
+            if (lastOption) {
+                const parser: ?Parser<*> = parsers.get(lastOption.name);
+
+                if (!parser) {
+                    // This is an illegal state!
+                } else {
+                    parser.parse(arg);
+                }
+            } else {
             }
-            flag = undefined;
         }
+    }
+
+    if(lastOptions.length) {
+        // This is an illegal state!
     }
 
     const result = Array.from(parsers.keys())
@@ -126,8 +145,6 @@ export function parse (args: Array<string>, lineSpec: LineSpec): any {
 
             return result;
         }, {});
-
-    console.log(result);
 
     return result;
 }
