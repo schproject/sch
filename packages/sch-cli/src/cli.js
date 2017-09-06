@@ -12,5 +12,5 @@ export function run ({ argv, cwd, env }: Process) {
         { argIndex, command } = registry.find(...rawArgs),
         parser = createParser();
 
-    parser.parse(rawArgs.slice(argIndex), command.lineSpec);
+    parser.parse(rawArgs.slice(argIndex), command.commandSpec);
 }

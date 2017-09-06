@@ -3,22 +3,24 @@
  */
 
 import type { Command } from '../types';
+
 import type { Process } from '../../types';
+
 import {
-    lineSpec,
-    option
-} from '../builder';
+    CommandSpecBuilder,
+    OptionSpecBuilder
+} from '../../spec';
 
 const init: Command = {
-    lineSpec: lineSpec()
-        .arg(option.string('path')
+    commandSpec: CommandSpecBuilder.new('init')
+        .arg(OptionSpecBuilder.string('path')
             .defaultValue(({ cwd }: Process) => cwd())
             .build())
-        .flag(option.string('-store-config')
-                .multiple()
-                .build())
-        .flag(option.string('-store-type')
-                .build())
+        .flag(OptionSpecBuilder.string('-store-config')
+            .multiple()
+            .build())
+        .flag(OptionSpecBuilder.string('-store-type')
+            .build())
         .build(),
     run (process: Process) {}
 };

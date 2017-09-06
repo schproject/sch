@@ -5,7 +5,7 @@
 import type {
     OptionSpec,
     OptionType
-} from './types';
+} from '../spec';
 
 export class ParserError extends Error {}
 

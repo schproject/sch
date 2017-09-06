@@ -29,9 +29,12 @@ import {
 } from './states';
 
 import type {
-    LineSpec,
+    CommandSpec,
     OptionSpec,
-    OptionType,
+    OptionType
+} from '../spec';
+
+import type {
     Parser,
     ParserContext,
     ParserState,
@@ -121,7 +124,7 @@ export class StandardParser implements Parser {
         this.states = states;
     }
 
-    parse (args: Array<string>, lineSpec: LineSpec): void {
+    parse (args: Array<string>, commandSpec: CommandSpec): void {
         console.log('Parsing args', args);
         const transition = this.context.transition.bind(this.context);
 
@@ -136,7 +139,7 @@ export class StandardParser implements Parser {
                 transition(argIndex, DONE);
             } else {
                 console.log('Entering state', label);
-                state.enter(argIndex, args, lineSpec, transition);
+                state.enter(argIndex, args, commandSpec, transition);
             }
         }
     }

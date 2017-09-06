@@ -2,36 +2,12 @@
  * @flow
  */
 
-import {
-    DONE,
-    INITIAL,
-    INVALID_ARG,
-    INVALID_FLAG,
-    PARSE_ARG,
-    PARSE_FLAG,
-    PARSE_FLAG_VALUE,
-    READ_ARG
-} from './labels';
+import { CommandSpec } from '../spec';
 
 import { Process } from '../types';
 
-export interface LineSpec {
-    +argSpecs: Array<OptionSpec<*>>;
-    +flagSpecs: { [name: string]: OptionSpec<*> };
-}
-
-export interface OptionSpec<T: OptionType> {
-    +defaultValue: T | Process => T;
-    +multiple: boolean;
-    +name: string;
-    +optional: boolean;
-    +sample: T;
-}
-
-export type OptionType = boolean | number | string;
-
 export interface Parser {
-    +parse: (args: Array<string>, lineSpec: LineSpec) => void;
+    +parse: (args: Array<string>, commandSpec: CommandSpec) => void;
 }
 
 export interface ParserContext {
@@ -43,7 +19,7 @@ export interface ParserContext {
 
 export interface ParserState {
     +enter: (argIndex: number, args: Array<string>,
-        lineSpec: LineSpec,  transition: StateTransition) => void;
+        commandSpec: CommandSpec,  transition: StateTransition) => void;
 }
 
 export type StateTransition = (nextArgIndex: number, nextState: string) => void;

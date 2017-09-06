@@ -2,10 +2,10 @@
  * @flow
  */
 
-import type { LineSpec } from '../parser';
+import type { CommandSpec } from '../spec';
 import type { Process } from '../types';
 
 export interface Command {
-    lineSpec: LineSpec;
+    commandSpec: CommandSpec;
     run (process: Process): void;
 }
