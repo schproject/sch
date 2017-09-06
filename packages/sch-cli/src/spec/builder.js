@@ -6,6 +6,7 @@ import { IllegalStateError } from '../errors';
 
 import type {
     CommandSpec,
+    GroupSpec,
     OptionSpec,
     OptionType
 } from '../spec';
@@ -52,6 +53,48 @@ export class CommandSpecBuilder {
 
     name (name: string): CommandSpecBuilder {
         this._name = name;
+        return this;
+    }
+}
+
+export class GroupSpecBuilder {
+    static new (name: string) {
+        return new GroupSpecBuilder(name);
+    }
+
+    _commands: Map<string, CommandSpec>;
+    _name: string;
+    _subgroups: Map<string, GroupSpec>;
+
+    constructor (name: string) {
+        this._commands = new Map();
+        this._name = name;
+        this._subgroups = new Map();
+    }
+
+    build (): GroupSpec {
+        const groupSpec: GroupSpec = {
+            commands: Array.from(this._commands).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+            name: this._name,
+            subgroups: Array.from(this._subgroups).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+        };
+
+        return groupSpec;
+    }
+
+    command (command: CommandSpec): GroupSpecBuilder {
+        this._commands.set(command.name, command);
+        return this;
+    }
+
+    subgroup (subgroup: GroupSpec): GroupSpecBuilder {
+        this._subgroups.set(subgroup.name, subgroup);
         return this;
     }
 }

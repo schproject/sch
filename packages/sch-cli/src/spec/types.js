@@ -4,15 +4,16 @@
 
 import { Process } from '../types';
 
-export interface CommandGroup {
-    +commands: Array<CommandGroup | CommandSpec>;
-    +name: string
-}
-
 export interface CommandSpec {
     +args: Array<OptionSpec<*>>;
     +flags: { [name: string]: OptionSpec<*> };
     +name: string;
+}
+
+export interface GroupSpec {
+    +commands: { [name: string]: CommandSpec };
+    +name: string;
+    +subgroups: { [name: string]: GroupSpec };
 }
 
 export interface OptionSpec<T: OptionType> {
