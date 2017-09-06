@@ -7,22 +7,25 @@ import type { Command } from '../types';
 import type { Process } from '../../types';
 
 import {
-    CommandSpecBuilder,
-    OptionSpecBuilder
+    CommandSpec,
+    specBuilder
 } from '../../spec';
 
-const init: Command = {
-    commandSpec: CommandSpecBuilder.new('init')
-        .arg(OptionSpecBuilder.string('path')
-            .defaultValue(({ cwd }: Process) => cwd())
-            .build())
-        .flag(OptionSpecBuilder.string('-store-config')
-            .multiple()
-            .build())
-        .flag(OptionSpecBuilder.string('-store-type')
-            .build())
-        .build(),
-    run (process: Process) {}
-};
+export const spec: CommandSpec =  specBuilder.command
+    .named('init')
+    .arg(specBuilder.option
+        .string('path')
+        .defaultValue(({ cwd }: Process) => cwd())
+        .build())
+    .flag(specBuilder.option
+        .string('-store-config')
+        .multiple()
+        .build())
+    .flag(specBuilder.option
+        .string('-store-type')
+        .build())
+    .build();
 
-export default init;
+export default {
+    spec
+}

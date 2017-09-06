@@ -2,10 +2,16 @@
  * @flow
  */
 
-import Registry, {
-    DEFAULT_KEY
-} from '../registry';
+import {
+    NamedGroupSpec,
+    specBuilder
+} from '../../spec';
 
 import init from './init';
 
-export default new Registry({ init });
+export const spec: NamedGroupSpec = specBuilder.group
+    .named('log')
+    .command(init.spec)
+    .build()
+
+export default { spec }

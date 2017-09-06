@@ -12,8 +12,13 @@ export interface CommandSpec {
 
 export interface GroupSpec {
     +commands: { [name: string]: CommandSpec };
+    +subgroups: { [name: string]: NamedGroupSpec };
+}
+
+export interface NamedGroupSpec {
+    +commands: { [name: string]: CommandSpec };
     +name: string;
-    +subgroups: { [name: string]: GroupSpec };
+    +subgroups: { [name: string]: NamedGroupSpec };
 }
 
 export interface OptionSpec<T: OptionType> {

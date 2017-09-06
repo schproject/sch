@@ -2,15 +2,12 @@
  * @flow
  */
 
-export {
-    CommandSpecBuilder,
-    GroupSpecBuilder,
-    OptionSpecBuilder
-} from './builder';
+export { default as specBuilder } from './builder';
 
 export type {
     CommandSpec,
     GroupSpec,
+    NamedGroupSpec,
     OptionSpec,
     OptionType
 } from './types';

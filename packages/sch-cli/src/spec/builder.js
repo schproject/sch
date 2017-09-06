@@ -7,17 +7,14 @@ import { IllegalStateError } from '../errors';
 import type {
     CommandSpec,
     GroupSpec,
+    NamedGroupSpec,
     OptionSpec,
     OptionType
-} from '../spec';
+} from './types';
 
 import type { Process } from '../types';
 
-export class CommandSpecBuilder {
-    static new (name: string) {
-        return new CommandSpecBuilder(name);
-    }
-
+class CommandSpecBuilder {
     _args: Array<OptionSpec<*>>;
     _flags: Map<string, OptionSpec<*>>;
     _name: string;
@@ -57,18 +54,12 @@ export class CommandSpecBuilder {
     }
 }
 
-export class GroupSpecBuilder {
-    static new (name: string) {
-        return new GroupSpecBuilder(name);
-    }
-
+class GroupSpecBuilder {
     _commands: Map<string, CommandSpec>;
-    _name: string;
-    _subgroups: Map<string, GroupSpec>;
+    _subgroups: Map<string, NamedGroupSpec>;
 
-    constructor (name: string) {
+    constructor () {
         this._commands = new Map();
-        this._name = name;
         this._subgroups = new Map();
     }
 
@@ -78,7 +69,6 @@ export class GroupSpecBuilder {
                 obj[key] = value;
                 return obj;
             }, {}),
-            name: this._name,
             subgroups: Array.from(this._subgroups).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
@@ -93,25 +83,41 @@ export class GroupSpecBuilder {
         return this;
     }
 
-    subgroup (subgroup: GroupSpec): GroupSpecBuilder {
+    subgroup (subgroup: NamedGroupSpec): GroupSpecBuilder {
         this._subgroups.set(subgroup.name, subgroup);
         return this;
     }
 }
 
-export class OptionSpecBuilder<T: OptionType> {
-    static boolean (name: string): OptionSpecBuilder<boolean> {
-        return new OptionSpecBuilder(name, true);
+class NamedGroupSpecBuilder {
+    _builder: GroupSpecBuilder;
+    _name: string;
+
+    constructor (name: string) {
+        this._builder = new GroupSpecBuilder();
+        this._name = name;
     }
 
-    static number (name: string): OptionSpecBuilder<number> {
-        return new OptionSpecBuilder(name, 0);
+    build (): NamedGroupSpec {
+        const namedGroupSpec: NamedGroupSpec = Object.assign({}, this._builder.build(), {
+            name: this._name,
+        });
+
+        return namedGroupSpec;
     }
 
-    static string (name: string): OptionSpecBuilder<string> {
-        return new OptionSpecBuilder(name, '');
+    command (command: CommandSpec): NamedGroupSpecBuilder {
+        this._builder.command(command);
+        return this;
     }
 
+    subgroup (subgroup: NamedGroupSpec): NamedGroupSpecBuilder {
+        this._builder.subgroup(subgroup);
+        return this;
+    }
+}
+
+class OptionSpecBuilder<T: OptionType> {
     _defaultValue: T | Process => T;
     _name: string;
     _multiple: boolean;
@@ -151,5 +157,29 @@ export class OptionSpecBuilder<T: OptionType> {
     }
 }
 
-export const option = {
+export default {
+    command: {
+        named: function (name: string) {
+            return new CommandSpecBuilder(name);
+        }
+    },
+    group: {
+        new: function () {
+            return new GroupSpecBuilder();
+        },
+        named: function (name: string) {
+            return new NamedGroupSpecBuilder(name);
+        }
+    },
+    option: {
+        boolean (name: string): OptionSpecBuilder<boolean> {
+            return new OptionSpecBuilder(name, true);
+        },
+        number (name: string): OptionSpecBuilder<number> {
+            return new OptionSpecBuilder(name, 0);
+        },
+        string (name: string): OptionSpecBuilder<string> {
+            return new OptionSpecBuilder(name, '');
+        }
+    }
 }
