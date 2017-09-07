@@ -56,13 +56,13 @@ class CommandSpecBuilder {
 
 class GroupSpecBuilder {
     _commands: Map<string, CommandSpec>;
+    _groups: Map<string, GroupSpec>;
     _name: string;
-    _subgroups: Map<string, GroupSpec>;
 
     constructor (name: string) {
         this._commands = new Map();
+        this._groups = new Map();
         this._name = name;
-        this._subgroups = new Map();
     }
 
     build (): GroupSpec {
@@ -71,11 +71,11 @@ class GroupSpecBuilder {
                 obj[key] = value;
                 return obj;
             }, {}),
-            name: this._name,
-            subgroups: Array.from(this._subgroups).reduce((obj, [key, value]) => {
+            groups: Array.from(this._groups).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
             }, {}),
+            name: this._name
         };
 
         return groupSpec;
@@ -86,8 +86,8 @@ class GroupSpecBuilder {
         return this;
     }
 
-    subgroup (subgroup: GroupSpec): GroupSpecBuilder {
-        this._subgroups.set(subgroup.name, subgroup);
+    group (group: GroupSpec): GroupSpecBuilder {
+        this._groups.set(group.name, group);
         return this;
     }
 }

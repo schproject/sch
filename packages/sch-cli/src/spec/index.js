@@ -2,8 +2,6 @@
  * @flow
  */
 
-export { default as specBuilder } from './builder';
-
 export type {
     CommandSpec,
     GroupSpec,
@@ -11,3 +9,7 @@ export type {
     OptionType,
     ProgramSpec
 } from './types';
+
+export { default as specBuilder } from './builder';
+
+export { findCommandSpec } from './util';

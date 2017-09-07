@@ -27,8 +27,8 @@ export interface ParserResult {
 }
 
 export interface ParserState {
-    +enter: (argIndex: number, args: Array<string>,
-        programSpec: ProgramSpec, transition: StateTransition) => void;
+    +enter: (args: Array<string>, parserContext: ParserContext,
+        programSpec: ProgramSpec) => void;
 }
 
 export interface ParserStateResult<T: OptionType> {
