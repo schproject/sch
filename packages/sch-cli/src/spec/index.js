@@ -7,7 +7,7 @@ export { default as specBuilder } from './builder';
 export type {
     CommandSpec,
     GroupSpec,
-    NamedGroupSpec,
     OptionSpec,
-    OptionType
+    OptionType,
+    ProgramSpec
 } from './types';

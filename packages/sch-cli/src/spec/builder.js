@@ -7,9 +7,9 @@ import { IllegalStateError } from '../errors';
 import type {
     CommandSpec,
     GroupSpec,
-    NamedGroupSpec,
     OptionSpec,
-    OptionType
+    OptionType,
+    ProgramSpec
 } from './types';
 
 import type { Process } from '../types';
@@ -56,10 +56,12 @@ class CommandSpecBuilder {
 
 class GroupSpecBuilder {
     _commands: Map<string, CommandSpec>;
-    _subgroups: Map<string, NamedGroupSpec>;
+    _name: string;
+    _subgroups: Map<string, GroupSpec>;
 
-    constructor () {
+    constructor (name: string) {
         this._commands = new Map();
+        this._name = name;
         this._subgroups = new Map();
     }
 
@@ -69,6 +71,7 @@ class GroupSpecBuilder {
                 obj[key] = value;
                 return obj;
             }, {}),
+            name: this._name,
             subgroups: Array.from(this._subgroups).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
@@ -83,36 +86,8 @@ class GroupSpecBuilder {
         return this;
     }
 
-    subgroup (subgroup: NamedGroupSpec): GroupSpecBuilder {
+    subgroup (subgroup: GroupSpec): GroupSpecBuilder {
         this._subgroups.set(subgroup.name, subgroup);
-        return this;
-    }
-}
-
-class NamedGroupSpecBuilder {
-    _builder: GroupSpecBuilder;
-    _name: string;
-
-    constructor (name: string) {
-        this._builder = new GroupSpecBuilder();
-        this._name = name;
-    }
-
-    build (): NamedGroupSpec {
-        const namedGroupSpec: NamedGroupSpec = Object.assign({}, this._builder.build(), {
-            name: this._name,
-        });
-
-        return namedGroupSpec;
-    }
-
-    command (command: CommandSpec): NamedGroupSpecBuilder {
-        this._builder.command(command);
-        return this;
-    }
-
-    subgroup (subgroup: NamedGroupSpec): NamedGroupSpecBuilder {
-        this._builder.subgroup(subgroup);
         return this;
     }
 }
@@ -157,19 +132,49 @@ class OptionSpecBuilder<T: OptionType> {
     }
 }
 
+class ProgramSpecBuilder {
+    _commands: Map<string, CommandSpec>;
+    _groups: Map<string, GroupSpec>;
+
+    constructor () {
+        this._commands = new Map();
+        this._groups = new Map();
+    }
+
+    build (): ProgramSpec {
+        const programSpec: ProgramSpec = {
+            commands: Array.from(this._commands).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+            groups: Array.from(this._groups).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+        };
+
+        return programSpec;
+    }
+
+    command (command: CommandSpec): ProgramSpecBuilder {
+        this._commands.set(command.name, command);
+        return this;
+    }
+
+    group (group: GroupSpec): ProgramSpecBuilder {
+        this._groups.set(group.name, group);
+        return this;
+    }
+}
+
 export default {
     command: {
         named: function (name: string) {
             return new CommandSpecBuilder(name);
         }
     },
-    group: {
-        new: function () {
-            return new GroupSpecBuilder();
-        },
-        named: function (name: string) {
-            return new NamedGroupSpecBuilder(name);
-        }
+    group: function (name: string) {
+        return new GroupSpecBuilder(name);
     },
     option: {
         boolean (name: string): OptionSpecBuilder<boolean> {
@@ -181,5 +186,8 @@ export default {
         string (name: string): OptionSpecBuilder<string> {
             return new OptionSpecBuilder(name, '');
         }
+    },
+    program: function () {
+        return new ProgramSpecBuilder();
     }
 }

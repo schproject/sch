@@ -3,14 +3,13 @@
  */
 
 import {
-    NamedGroupSpec,
+    GroupSpec,
     specBuilder
 } from '../../spec';
 
 import init from './init';
 
-export const spec: NamedGroupSpec = specBuilder.group
-    .named('log')
+export const spec: GroupSpec = specBuilder.group('log')
     .command(init.spec)
     .build()
 

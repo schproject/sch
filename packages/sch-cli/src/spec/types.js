@@ -12,13 +12,8 @@ export interface CommandSpec {
 
 export interface GroupSpec {
     +commands: { [name: string]: CommandSpec };
-    +subgroups: { [name: string]: NamedGroupSpec };
-}
-
-export interface NamedGroupSpec {
-    +commands: { [name: string]: CommandSpec };
     +name: string;
-    +subgroups: { [name: string]: NamedGroupSpec };
+    +subgroups: { [name: string]: GroupSpec };
 }
 
 export interface OptionSpec<T: OptionType> {
@@ -30,3 +25,8 @@ export interface OptionSpec<T: OptionType> {
 }
 
 export type OptionType = boolean | number | string;
+
+export interface ProgramSpec {
+    +commands: { [name: string]: CommandSpec };
+    +groups: { [name: string]: GroupSpec };
+}

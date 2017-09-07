@@ -8,6 +8,9 @@ import {
     INVALID_ARG,
     INVALID_FLAG,
     PARSE_ARG,
+    PARSE_COMMAND_OR_GROUP_NAME,
+    PARSE_COMMAND_NAME,
+    PARSE_GROUP_NAME,
     PARSE_FLAG,
     PARSE_FLAG_VALUE,
     READ_ARG
@@ -23,13 +26,16 @@ import {
     InvalidArgState,
     InvalidFlagState,
     ParseArgState,
+    ParseCommandNameState,
+    ParseCommandOrGroupNameState,
+    ParseGroupNameState,
+    ParseFlagOrArgState,
     ParseFlagState,
-    ParseFlagValueState,
-    ReadArgState
+    ParseFlagValueState
 } from './states';
 
 import type {
-    CommandSpec,
+    ProgramSpec,
     OptionSpec,
     OptionType
 } from '../spec';
@@ -37,7 +43,9 @@ import type {
 import type {
     Parser,
     ParserContext,
+    ParserResult,
     ParserState,
+    ParserStateResult,
     StateTransition
 } from './types';
 
@@ -124,7 +132,7 @@ export class StandardParser implements Parser {
         this.states = states;
     }
 
-    parse (args: Array<string>, commandSpec: CommandSpec): void {
+    parse (args: Array<string>, programSpec: ProgramSpec): void {
         console.log('Parsing args', args);
         const transition = this.context.transition.bind(this.context);
 
@@ -136,10 +144,8 @@ export class StandardParser implements Parser {
             if(!state) {
                 throw new StateNotFoundError(label);
             } else if (argIndex >= args.length) {
-                transition(argIndex, DONE);
             } else {
                 console.log('Entering state', label);
-                state.enter(argIndex, args, commandSpec, transition);
             }
         }
     }
@@ -147,15 +153,24 @@ export class StandardParser implements Parser {
 
 export class StandardParserContext implements ParserContext {
     argIndex: number;
+    result: ParserResult;
     state: string;
 
     constructor () {
         this.argIndex = 0;
+        this.result = {
+            names: [],
+            options: {}
+        };
         this.state = INITIAL;
     }
 
     getArgIndex (): number {
         return this.argIndex;
+    }
+
+    getResult (): ParserResult {
+        return this.result;
     }
 
     getState (): string {
@@ -166,9 +181,34 @@ export class StandardParserContext implements ParserContext {
         return this.state == DONE;
     }
 
-    transition (nextArgIndex: number, nextState: string) {
+    transition (nextArgIndex: number, nextState: string, result?: ParserStateResult<*>) {
         console.log('Recording next state', nextState);
+
         this.argIndex = nextArgIndex;
+
+        if (result != null) {
+            switch (this.getState()) {
+                case PARSE_ARG:
+                case PARSE_FLAG:
+                    this.result = Object.assign({}, this.result, {
+                        options: Object.assign({}, this.result.options, {
+                            [result.name]: this.result.options[result.name]
+                                ? [].concat(this.result.options[result.name], result.value)
+                                : result.value
+                        })
+                    });
+                    break;
+                case PARSE_COMMAND_NAME:
+                case PARSE_GROUP_NAME:
+                    this.result = Object.assign({}, this.result, {
+                        names: this.result.names.concat(result.name)
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+
         this.state = nextState;
     }
 }
@@ -202,6 +242,9 @@ export function createParser () {
             .add(INVALID_ARG, new InvalidArgState())
             .add(INVALID_FLAG, new InvalidFlagState())
             .add(PARSE_ARG, new ParseArgState())
+            .add(PARSE_COMMAND_NAME, new ParseCommandNameState())
+            .add(PARSE_COMMAND_OR_GROUP_NAME, new ParseCommandOrGroupNameState())
+            .add(PARSE_GROUP_NAME, new ParseGroupNameState())
             .add(PARSE_FLAG, new ParseFlagState())
             .add(PARSE_FLAG_VALUE, new ParseFlagValueState())
             .add(READ_ARG, new ParseFlagState())
