@@ -18,7 +18,7 @@ export interface ParserContext {
     +getResult: (void) => ParserResult;
     +getState: (void) => string;
     +isDone: (void) => boolean;
-    +transition: StateTransition;
+    +transition: ParserStateTransition;
 }
 
 export interface ParserResult {
@@ -36,4 +36,4 @@ export interface ParserStateResult<T: OptionType> {
     +value?: T | Array<T>;
 }
 
-export type StateTransition = (nextArgIndex: number, nextState: string, result?: ParserStateResult<*>) => void;
+export type ParserStateTransition = (nextArgIndex: number, nextState: string, result?: ParserStateResult<*>) => void;

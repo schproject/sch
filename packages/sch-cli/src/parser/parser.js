@@ -46,7 +46,7 @@ import type {
     ParserResult,
     ParserState,
     ParserStateResult,
-    StateTransition
+    ParserStateTransition
 } from './types';
 
 export class OptionParser<T: OptionType> {

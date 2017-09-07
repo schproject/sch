@@ -32,7 +32,7 @@ import { findCommandSpec } from '../spec';
 import type {
     ParserContext,
     ParserState,
-    StateTransition
+    ParserStateTransition
 } from './types';
 
 export class DoneState implements ParserState {
