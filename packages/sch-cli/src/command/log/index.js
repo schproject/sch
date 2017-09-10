@@ -9,8 +9,8 @@ import {
 
 import init from './init';
 
-export const spec: GroupSpec = specBuilder.group('log')
-    .command(init.spec)
+export const spec: GroupSpec = specBuilder.group()
+    .command('init', init.spec)
     .build()
 
 export default { spec }

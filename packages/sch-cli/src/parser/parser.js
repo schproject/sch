@@ -2,6 +2,17 @@
  * @flow
  */
 
+import type {
+    CommandOptionValue
+} from '../command';
+
+import type {
+    ProgramSpec,
+    OptionSpec,
+    OptionType
+} from '../spec';
+
+
 import {
     DONE,
     INITIAL,
@@ -35,12 +46,6 @@ import {
 } from './states';
 
 import type {
-    ProgramSpec,
-    OptionSpec,
-    OptionType
-} from '../spec';
-
-import type {
     Parser,
     ParserContext,
     ParserResult,
@@ -48,6 +53,12 @@ import type {
     ParserStateResult,
     ParserStateTransition
 } from './types';
+
+const INITIAL_PARSER_RESULT: ParserResult = {
+    args: {},
+    flags: {},
+    names: []
+};
 
 export class OptionParser<T: OptionType> {
     option: OptionSpec<T>;
@@ -122,6 +133,59 @@ class OptionRefiner<T: OptionType> {
     }
 }
 
+class ParserResultBuilder implements ParserResult {
+    static new (initialParserResult: ParserResult = INITIAL_PARSER_RESULT) {
+        return new ParserResultBuilder(initialParserResult);
+    }
+
+    args: Map<string, CommandOptionValue>;
+    flags: Map<string, CommandOptionValue>;
+    names: Array<string>;
+
+    constructor ({ args, flags, names }: ParserResult) {
+        this.args = Object.keys(args).reduce((map, key) => {
+            map.set(key, args[key]);
+            return map;
+        }, new Map());
+
+        this.flags = Object.keys(flags).reduce((map, key) => {
+            map.set(key, flags[key]);
+            return map;
+        }, new Map());
+
+        this.names = names.slice();
+    }
+
+    arg (name: string, value: CommandOptionValue): ParserResultBuilder {
+        this.args.set(name, value);
+        return this;
+    }
+
+    build (): ParserResult {
+        return {
+            args: Array.from(this.args).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+            flags: Array.from(this.flags).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+            names: this.names.slice()
+        };
+    }
+
+    flag (name: string, value: CommandOptionValue): ParserResultBuilder {
+        this.flags.set(name, value);
+        return this;
+    }
+
+    name (name: string): ParserResultBuilder {
+        this.names.push(name);
+        return this;
+    }
+}
+
 export class StandardParser implements Parser {
     context: ParserContext;
     states: { [label: string]: ParserState };
@@ -153,15 +217,12 @@ export class StandardParser implements Parser {
 
 export class StandardParserContext implements ParserContext {
     argIndex: number;
-    result: ParserResult;
+    result: ParserResultBuilder;
     state: string;
 
     constructor () {
         this.argIndex = 0;
-        this.result = {
-            names: [],
-            options: {}
-        };
+        this.result = ParserResultBuilder.new();
         this.state = INITIAL;
     }
 
@@ -181,30 +242,27 @@ export class StandardParserContext implements ParserContext {
         return this.state == DONE;
     }
 
-    transition (nextArgIndex: number, nextState: string, result?: ParserStateResult<*>) {
+    transition (nextArgIndex: number, nextState: string, result?: ParserStateResult) {
         console.log('Recording next state', nextState);
 
         this.argIndex = nextArgIndex;
 
         if (result != null) {
-            switch (this.getState()) {
-                case PARSE_ARG:
-                case PARSE_FLAG:
-                    this.result = Object.assign({}, this.result, {
-                        options: Object.assign({}, this.result.options, {
-                            [result.name]: this.result.options[result.name]
-                                ? [].concat(this.result.options[result.name], result.value)
-                                : result.value
-                        })
-                    });
+            const builder = ParserResultBuilder.new(this.result);
+
+            switch (result.type) {
+                case 'arg':
+                    if (result.value) {
+                        this.result = builder.arg(result.name, result.value);
+                    }
                     break;
-                case PARSE_COMMAND_NAME:
-                case PARSE_GROUP_NAME:
-                    this.result = Object.assign({}, this.result, {
-                        names: this.result.names.concat(result.name)
-                    });
+                case 'flag':
+                    if (result.value) {
+                        this.result = builder.flag(result.name, result.value);
+                    }
                     break;
-                default:
+                case 'name':
+                    this.result = builder.name(result.name);
                     break;
             }
         }
@@ -213,7 +271,7 @@ export class StandardParserContext implements ParserContext {
     }
 }
 
-export class StateContainerBuilder {
+class StateContainerBuilder {
     states: { [label: string]: ParserState };
 
     constructor () {

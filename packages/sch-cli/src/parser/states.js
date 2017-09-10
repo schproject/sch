@@ -74,7 +74,7 @@ export class ParseCommandNameState implements ParserState {
         parserContext.transition(
             parserContext.getArgIndex() + 1,
             PARSE_FLAG_OR_ARG,
-            { name }
+            { name, type: 'name' }
         );
     }
 }
@@ -108,7 +108,7 @@ export class ParseGroupNameState implements ParserState {
             parserContext.transition(
                 parserContext.getArgIndex() + 1,
                 PARSE_COMMAND_OR_GROUP_NAME,
-                { name }
+                { name, type: 'name' }
             );
         } else {
         }
@@ -152,7 +152,7 @@ export class ParseFlagState implements ParserState {
                 parserContext.transition(
                     parserContext.getArgIndex() + 2,
                     PARSE_FLAG_OR_ARG,
-                    { name, value }
+                    { name, type: 'flag', value }
                 );
             }
         }

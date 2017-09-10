@@ -11,19 +11,12 @@ import {
     specBuilder
 } from '../../spec';
 
-export const spec: CommandSpec =  specBuilder.command
-    .named('init')
-    .arg(specBuilder.option
-        .string('path')
+export const spec: CommandSpec =  specBuilder.command()
+    .arg('path', specBuilder.option.string()
         .defaultValue(({ cwd }: Process) => cwd())
         .build())
-    .flag(specBuilder.option
-        .string('-store-config')
-        .multiple()
-        .build())
-    .flag(specBuilder.option
-        .string('-store-type')
-        .build())
+    .flag('-store-config', specBuilder.option.string().multiple().build())
+    .flag('-option-type', specBuilder.option.string().build())
     .build();
 
 export default {

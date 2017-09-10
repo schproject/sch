@@ -2,7 +2,7 @@
  * @flow
  */
 
-import {
+import type {
     CommandSpec,
     GroupSpec,
     ProgramSpec

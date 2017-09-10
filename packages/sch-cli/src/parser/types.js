@@ -3,6 +3,11 @@
  */
 
 import type {
+    CommandOption,
+    CommandOptionValue
+} from '../command';
+
+import type {
     OptionType,
     ProgramSpec
 } from '../spec';
@@ -22,8 +27,9 @@ export interface ParserContext {
 }
 
 export interface ParserResult {
+    +args: { [name: string]: CommandOptionValue };
+    +flags: { [name: string]: CommandOptionValue };
     +names: Array<string>;
-    +options: { [key: string]: OptionType | Array<OptionType> };
 }
 
 export interface ParserState {
@@ -31,9 +37,12 @@ export interface ParserState {
         programSpec: ProgramSpec) => void;
 }
 
-export interface ParserStateResult<T: OptionType> {
+export interface ParserStateResult {
     +name: string;
-    +value?: T | Array<T>;
+    +type: ParserStateResultType;
+    +value?: CommandOptionValue;
 }
 
-export type ParserStateTransition = (nextArgIndex: number, nextState: string, result?: ParserStateResult<*>) => void;
+type ParserStateResultType = 'arg' | 'flag' | 'name';
+
+export type ParserStateTransition = (nextArgIndex: number, nextState: string, result?: ParserStateResult) => void;

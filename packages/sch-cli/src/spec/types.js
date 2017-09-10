@@ -5,18 +5,16 @@
 import { Process } from '../types';
 
 export interface CommandSpec {
-    +args: Array<OptionSpec<*>>;
+    +args: Array<NamedOptionSpec<*>>;
     +flags: { [name: string]: OptionSpec<*> };
-    +name: string;
 }
 
 export interface GroupSpec {
     +commands: { [name: string]: CommandSpec };
     +groups: { [name: string]: GroupSpec };
-    +name: string;
 }
 
-export interface OptionSpec<T: OptionType> {
+export interface NamedOptionSpec<T: OptionType> {
     +defaultValue: T | Process => T;
     +multiple: boolean;
     +name: string;
@@ -24,9 +22,13 @@ export interface OptionSpec<T: OptionType> {
     +sample: T;
 }
 
+export interface OptionSpec<T: OptionType> {
+    +defaultValue: T | Process => T;
+    +multiple: boolean;
+    +optional: boolean;
+    +sample: T;
+}
+
 export type OptionType = boolean | number | string;
 
-export interface ProgramSpec {
-    +commands: { [name: string]: CommandSpec };
-    +groups: { [name: string]: GroupSpec };
-}
+export type ProgramSpec = GroupSpec;

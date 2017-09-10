@@ -9,24 +9,29 @@ import type {
     GroupSpec,
     OptionSpec,
     OptionType,
+    NamedOptionSpec,
     ProgramSpec
 } from './types';
 
 import type { Process } from '../types';
 
 class CommandSpecBuilder {
-    _args: Array<OptionSpec<*>>;
+    _args: Array<NamedOptionSpec<*>>;
     _flags: Map<string, OptionSpec<*>>;
-    _name: string;
 
-    constructor (name: string) {
+    constructor () {
         this._args= [];
         this._flags = new Map();
-        this._name = name;
     }
 
-    arg (arg: OptionSpec<*>): CommandSpecBuilder {
-        this._args.push(arg);
+    arg (name: string, { defaultValue, multiple, optional, sample }: OptionSpec<*>): CommandSpecBuilder {
+        this._args.push({
+            defaultValue,
+            multiple,
+            name,
+            optional,
+            sample
+        });
         return this;
     }
 
@@ -36,20 +41,14 @@ class CommandSpecBuilder {
             flags: Array.from(this._flags).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
-            }, {}),
-            name: this._name
+            }, {})
         };
 
         return commandSpec;
     }
 
-    flag (option: OptionSpec<*>): CommandSpecBuilder {
-        this._flags.set(option.name, option);
-        return this;
-    }
-
-    name (name: string): CommandSpecBuilder {
-        this._name = name;
+    flag (name: string, option: OptionSpec<*>): CommandSpecBuilder {
+        this._flags.set(name, option);
         return this;
     }
 }
@@ -57,12 +56,10 @@ class CommandSpecBuilder {
 class GroupSpecBuilder {
     _commands: Map<string, CommandSpec>;
     _groups: Map<string, GroupSpec>;
-    _name: string;
 
-    constructor (name: string) {
+    constructor () {
         this._commands = new Map();
         this._groups = new Map();
-        this._name = name;
     }
 
     build (): GroupSpec {
@@ -74,33 +71,30 @@ class GroupSpecBuilder {
             groups: Array.from(this._groups).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
-            }, {}),
-            name: this._name
+            }, {})
         };
 
         return groupSpec;
     }
 
-    command (command: CommandSpec): GroupSpecBuilder {
-        this._commands.set(command.name, command);
+    command (name: string, command: CommandSpec): GroupSpecBuilder {
+        this._commands.set(name, command);
         return this;
     }
 
-    group (group: GroupSpec): GroupSpecBuilder {
-        this._groups.set(group.name, group);
+    group (name: string, group: GroupSpec): GroupSpecBuilder {
+        this._groups.set(name, group);
         return this;
     }
 }
 
 class OptionSpecBuilder<T: OptionType> {
     _defaultValue: T | Process => T;
-    _name: string;
     _multiple: boolean;
     _optional: boolean;
     _sample: T;
 
-    constructor (name: string, sample: T) {
-        this._name = name;
+    constructor (sample: T) {
         this._sample = sample;
     }
 
@@ -108,7 +102,6 @@ class OptionSpecBuilder<T: OptionType> {
         const spec: OptionSpec<T> = {
             defaultValue: this._defaultValue,
             multiple: this._multiple,
-            name: this._name,
             optional: this._optional,
             sample: this._sample,
         }
@@ -156,35 +149,33 @@ class ProgramSpecBuilder {
         return programSpec;
     }
 
-    command (command: CommandSpec): ProgramSpecBuilder {
-        this._commands.set(command.name, command);
+    command (name: string, command: CommandSpec): ProgramSpecBuilder {
+        this._commands.set(name, command);
         return this;
     }
 
-    group (group: GroupSpec): ProgramSpecBuilder {
-        this._groups.set(group.name, group);
+    group (name: string, group: GroupSpec): ProgramSpecBuilder {
+        this._groups.set(name, group);
         return this;
     }
 }
 
 export default {
-    command: {
-        named: function (name: string) {
-            return new CommandSpecBuilder(name);
-        }
+    command: function () {
+        return new CommandSpecBuilder();
     },
-    group: function (name: string) {
-        return new GroupSpecBuilder(name);
+    group: function () {
+        return new GroupSpecBuilder();
     },
     option: {
-        boolean (name: string): OptionSpecBuilder<boolean> {
-            return new OptionSpecBuilder(name, true);
+        boolean (): OptionSpecBuilder<boolean> {
+            return new OptionSpecBuilder(true);
         },
-        number (name: string): OptionSpecBuilder<number> {
-            return new OptionSpecBuilder(name, 0);
+        number (): OptionSpecBuilder<number> {
+            return new OptionSpecBuilder(0);
         },
-        string (name: string): OptionSpecBuilder<string> {
-            return new OptionSpecBuilder(name, '');
+        string (): OptionSpecBuilder<string> {
+            return new OptionSpecBuilder('');
         }
     },
     program: function () {
