@@ -2,15 +2,27 @@
  * @flow
  */
 
-import {
-    GroupSpec,
-    specBuilder
-} from '../../spec';
+import { GroupSpec } from '../../spec';
+
+import { CommandGroup } from '../types';
 
 import init from './init';
 
-export const spec: GroupSpec = specBuilder.group()
-    .command('init', init.spec)
-    .build()
+export const group: CommandGroup = {
+    commands: {
+        init: init.command
+    },
+    groups: {}
+}
 
-export default { spec }
+export const spec: GroupSpec = {
+    commands: {
+        init: init.spec
+    },
+    groups: {}
+};
+
+export default {
+    group,
+    spec
+};

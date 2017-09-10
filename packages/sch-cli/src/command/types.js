@@ -7,17 +7,16 @@ import type { Process } from '../types';
 
 export interface Command {
     run (process: Process): void;
-    spec: CommandSpec;
 }
 
 export interface CommandGroup {
-    commands: Array<Command>;
-    groups: { [name: string]: CommandGroup };
+    +commands: { [name: string]: Command };
+    +groups: { [name: string]: CommandGroup };
 }
  
 export interface CommandOption<T: CommandOptionValue> {
-    name: string;
-    value: T;
+    +name: string;
+    +value: T;
 }
 
 export type CommandOptionValue =

@@ -4,8 +4,9 @@
 
 export type {
     Command,
+    CommandGroup,
     CommandOption,
     CommandOptionValue
 } from './types';
 
-import log from './log';
+export { default as registry } from './registry';

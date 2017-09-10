@@ -71,6 +71,7 @@ export class ParseCommandNameState implements ParserState {
         programSpec: ProgramSpec) {
         const name = args[parserContext.getArgIndex()]
 
+        console.log(`Found command with name ${name}, transitioning to parse flag or arg`);
         parserContext.transition(
             parserContext.getArgIndex() + 1,
             PARSE_FLAG_OR_ARG,
@@ -85,16 +86,19 @@ export class ParseCommandOrGroupNameState implements ParserState {
         const name = args[parserContext.getArgIndex()];
 
         if (programSpec.commands[name]) {
+            console.log(`Found a command with name ${name}, transitioning to parse command name`);
             parserContext.transition(
                 parserContext.getArgIndex(),
                 PARSE_COMMAND_NAME
             );
         } else if (programSpec.groups[name]) {
+            console.log(`Found a group with name ${name}, transitioning to parse group name`);
             parserContext.transition(
                 parserContext.getArgIndex(),
                 PARSE_GROUP_NAME
             );
         } else {
+            console.log(`Failed to find a command or group with name ${name}`);
         }
     }
 }
@@ -105,12 +109,14 @@ export class ParseGroupNameState implements ParserState {
         const name = args[parserContext.getArgIndex()];
 
         if (programSpec.groups[name]) {
+            console.log('Parsing group name', name);
             parserContext.transition(
                 parserContext.getArgIndex() + 1,
                 PARSE_COMMAND_OR_GROUP_NAME,
                 { name, type: 'name' }
             );
         } else {
+            console.log('Did not find group with name', name);
         }
     }
 }

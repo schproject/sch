@@ -11,6 +11,10 @@ import {
     specBuilder
 } from '../../spec';
 
+export const command: Command = {
+    run (process: Process) {}
+};
+
 export const spec: CommandSpec =  specBuilder.command()
     .arg('path', specBuilder.option.string()
         .defaultValue(({ cwd }: Process) => cwd())
@@ -20,5 +24,6 @@ export const spec: CommandSpec =  specBuilder.command()
     .build();
 
 export default {
+    command,
     spec
 }

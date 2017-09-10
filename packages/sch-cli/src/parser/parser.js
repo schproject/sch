@@ -12,7 +12,6 @@ import type {
     OptionType
 } from '../spec';
 
-
 import {
     DONE,
     INITIAL,
@@ -208,8 +207,11 @@ export class StandardParser implements Parser {
             if(!state) {
                 throw new StateNotFoundError(label);
             } else if (argIndex >= args.length) {
+                console.log('Finished parsing args');
+                this.context.transition(argIndex, DONE);
             } else {
                 console.log('Entering state', label);
+                state.enter(args, this.context, programSpec);
             }
         }
     }

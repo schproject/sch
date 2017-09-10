@@ -2,46 +2,31 @@
  * @flow
  */
 
-import type {
-    Command
-} from './types';
-
+import type { GroupSpec } from '../spec';
 import type { Process } from '../types';
 
-import {
-    NoSuchCommandError
-} from './errors';
+import type {
+    Command,
+    CommandGroup
+} from './types';
 
-export const DEFAULT_KEY = '_default';
+import log from './log';
 
-export default class Registry {
-    entries: { [name: string]: Command|Registry };
-
-    constructor (entries: { [name: string]: Command|Registry }) {
-        this.entries = entries;
-    }
-
-    find (...keys: Array<string>): {| argIndex: number, command: Command |} {
-        const [ firstKey, ...otherKeys ] = keys || [ DEFAULT_KEY ];
-
-        let entry: Command|Registry;
-
-        if (this.entries.hasOwnProperty(firstKey)) {
-            entry = this.entries[firstKey];
-        } else if (this.entries.hasOwnProperty(DEFAULT_KEY)) {
-            entry = this.entries[DEFAULT_KEY];
-        } else {
-            throw new NoSuchCommandError(firstKey);
-        }
-        
-        if (entry instanceof Registry) {
-            const result = entry.find(...otherKeys);
-            return {
-                argIndex: 1 + result.argIndex,
-                command: result.command
-            };
-        } else {
-            return { argIndex: 1, command: entry };
-        }
+const group: CommandGroup = {
+    commands: {},
+    groups: {
+        log: log.group
     }
 }
+
+const spec: GroupSpec = {
+    commands: {},
+    groups: {
+        log: log.spec
+    }
+}
+
+export default {
+    group,
+    spec
+};
