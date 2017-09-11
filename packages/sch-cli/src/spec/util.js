@@ -24,3 +24,16 @@ export function findCommandSpec (spec: GroupSpec|ProgramSpec,
 
     return null;
 }
+
+export function findGroupSpec (spec: GroupSpec|ProgramSpec,
+        names: Array<string>): ?GroupSpec {
+    if (names.length == 0) {
+        return spec;
+    }
+
+    if (spec.groups[names[0]]) {
+        return findGroupSpec(spec.groups[names[0]], names.slice(1));
+    }
+
+    return null;
+}

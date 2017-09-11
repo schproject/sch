@@ -13,4 +13,7 @@ export type {
 
 export { default as specBuilder } from './builder';
 
-export { findCommandSpec } from './util';
+export {
+    findCommandSpec,
+    findGroupSpec
+} from './util';

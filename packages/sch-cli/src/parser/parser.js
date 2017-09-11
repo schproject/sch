@@ -22,6 +22,7 @@ import {
     PARSE_COMMAND_NAME,
     PARSE_GROUP_NAME,
     PARSE_FLAG,
+    PARSE_FLAG_OR_ARG,
     PARSE_FLAG_VALUE,
     READ_ARG
 } from './labels';
@@ -196,7 +197,6 @@ export class StandardParser implements Parser {
     }
 
     parse (args: Array<string>, programSpec: ProgramSpec): void {
-        console.log('Parsing args', args);
         const transition = this.context.transition.bind(this.context);
 
         while(!this.context.isDone()) {
@@ -207,10 +207,8 @@ export class StandardParser implements Parser {
             if(!state) {
                 throw new StateNotFoundError(label);
             } else if (argIndex >= args.length) {
-                console.log('Finished parsing args');
                 this.context.transition(argIndex, DONE);
             } else {
-                console.log('Entering state', label);
                 state.enter(args, this.context, programSpec);
             }
         }
@@ -245,8 +243,6 @@ export class StandardParserContext implements ParserContext {
     }
 
     transition (nextArgIndex: number, nextState: string, result?: ParserStateResult) {
-        console.log('Recording next state', nextState);
-
         this.argIndex = nextArgIndex;
 
         if (result != null) {
@@ -306,6 +302,7 @@ export function createParser () {
             .add(PARSE_COMMAND_OR_GROUP_NAME, new ParseCommandOrGroupNameState())
             .add(PARSE_GROUP_NAME, new ParseGroupNameState())
             .add(PARSE_FLAG, new ParseFlagState())
+            .add(PARSE_FLAG_OR_ARG, new ParseFlagOrArgState())
             .add(PARSE_FLAG_VALUE, new ParseFlagValueState())
             .add(READ_ARG, new ParseFlagState())
             .build());

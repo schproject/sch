@@ -27,7 +27,15 @@ import type {
     ProgramSpec,
 } from '../spec';
 
-import { findCommandSpec } from '../spec';
+import typeof {
+    CommandSpec as CommandSpecType,
+    GroupSpec as GroupSpecType
+} from '../spec';
+
+import {
+    findCommandSpec,
+    findGroupSpec
+} from '../spec';
 
 import type {
     ParserContext,
@@ -55,68 +63,55 @@ export class InitialState implements ParserState {
 export class InvalidArgState implements ParserState {
     enter (args: Array<string>, parserContext: ParserContext,
             programSpec: ProgramSpec) {
-        console.error(args[parserContext.getArgIndex()], 'is an invalid arg');
     }
 }
 
 export class InvalidFlagState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
             programSpec: ProgramSpec) {
-        console.error(args[parserContext.getArgIndex()], 'is an invalid flag');
+        context.transition(context.getArgIndex(), DONE);
     }
 }
 
 export class ParseCommandNameState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
         programSpec: ProgramSpec) {
-        const name = args[parserContext.getArgIndex()]
+        const name = args[context.getArgIndex()]
 
-        console.log(`Found command with name ${name}, transitioning to parse flag or arg`);
-        parserContext.transition(
-            parserContext.getArgIndex() + 1,
-            PARSE_FLAG_OR_ARG,
-            { name, type: 'name' }
-        );
+        context.transition(context.getArgIndex() + 1,
+            PARSE_FLAG_OR_ARG, { name, type: 'name' });
     }
 }
 
 export class ParseCommandOrGroupNameState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
         programSpec: ProgramSpec) {
-        const name = args[parserContext.getArgIndex()];
+        const names = context.getResult().names;
+        const nextName = args[context.getArgIndex()];
 
-        if (programSpec.commands[name]) {
-            console.log(`Found a command with name ${name}, transitioning to parse command name`);
-            parserContext.transition(
-                parserContext.getArgIndex(),
-                PARSE_COMMAND_NAME
-            );
-        } else if (programSpec.groups[name]) {
-            console.log(`Found a group with name ${name}, transitioning to parse group name`);
-            parserContext.transition(
-                parserContext.getArgIndex(),
-                PARSE_GROUP_NAME
-            );
+        const groupSpec = findGroupSpec(programSpec, names);
+
+        if (!groupSpec) {
+            // TODO: no groups found matching names 
+        } else if (groupSpec.commands[nextName]) {
+            context.transition(context.getArgIndex(), PARSE_COMMAND_NAME);
+        } else if (groupSpec.groups[nextName]) {
+            context.transition(context.getArgIndex(), PARSE_GROUP_NAME);
         } else {
-            console.log(`Failed to find a command or group with name ${name}`);
+            // TODO: no command or subgroup found matching next name
         }
     }
 }
 
 export class ParseGroupNameState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
         programSpec: ProgramSpec) {
-        const name = args[parserContext.getArgIndex()];
+        const name = args[context.getArgIndex()];
 
         if (programSpec.groups[name]) {
-            console.log('Parsing group name', name);
-            parserContext.transition(
-                parserContext.getArgIndex() + 1,
-                PARSE_COMMAND_OR_GROUP_NAME,
-                { name, type: 'name' }
-            );
+            context.transition(context.getArgIndex() + 1,
+                PARSE_COMMAND_OR_GROUP_NAME, { name, type: 'name' });
         } else {
-            console.log('Did not find group with name', name);
         }
     }
 }
@@ -130,38 +125,46 @@ export class ParseArgState implements ParserState {
 }
 
 export class ParseFlagOrArgState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
             programSpec: ProgramSpec) {
-        if (args[parserContext.getArgIndex()].startsWith('-')) {
-            parserContext.transition(
-                parserContext.getArgIndex(),
-                PARSE_FLAG
-            );
+        if (args[context.getArgIndex()].startsWith('-')) {
+            context.transition(context.getArgIndex(), PARSE_FLAG);
         } else {
-            parserContext.transition(
-                parserContext.getArgIndex(),
-                PARSE_ARG
-            );
+            context.transition(context.getArgIndex(), PARSE_ARG);
         }
     }
 }
 
 export class ParseFlagState implements ParserState {
-    enter (args: Array<string>, parserContext: ParserContext,
+    enter (args: Array<string>, context: ParserContext,
             programSpec: ProgramSpec) {
-        const name = args[parserContext.getArgIndex()];
-        const valueIndex = parserContext.getArgIndex() + 1;
+        const name = args[context.getArgIndex()],
+            commandSpec = findCommandSpec(programSpec, context.getResult().names),
+            valueIndex = context.getArgIndex() + 1;
 
-        if (valueIndex <= args.length) {
-            const value = args[valueIndex];
-            if (!value.startsWith('-')) {
-                parserContext.transition(
-                    parserContext.getArgIndex() + 2,
-                    PARSE_FLAG_OR_ARG,
-                    { name, type: 'flag', value }
-                );
-            }
+        if (!commandSpec) {
+            throw new IllegalStateEntryError(PARSE_FLAG);
         }
+
+        const flagSpec = commandSpec.flags[name];
+
+        if (!flagSpec) {
+            context.transition(context.getArgIndex(), INVALID_FLAG);
+            return
+        }
+
+        let rawValue;
+        if (valueIndex < args.length && !args[valueIndex].startsWith('-')) {
+            rawValue = args[valueIndex];
+        } else if (typeof flagSpec.sample == 'boolean') {
+            rawValue = true;
+        } else {
+            context.transition(context.getArgIndex(), INVALID_FLAG);
+            return;
+        }
+
+        context.transition(context.getArgIndex() + 2,
+            PARSE_FLAG_OR_ARG, { name, type: 'flag', rawValue });
     }
 }
 

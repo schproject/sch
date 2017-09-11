@@ -20,7 +20,7 @@ export const spec: CommandSpec =  specBuilder.command()
         .defaultValue(({ cwd }: Process) => cwd())
         .build())
     .flag('-store-config', specBuilder.option.string().multiple().build())
-    .flag('-option-type', specBuilder.option.string().build())
+    .flag('-store-type', specBuilder.option.string().build())
     .build();
 
 export default {
