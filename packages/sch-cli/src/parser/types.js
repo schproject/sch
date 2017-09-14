@@ -20,11 +20,28 @@ export interface Parser {
 
 export interface ParserContext {
     +getArgIndex: (void) => number;
+    +getError: (void) => ?ParserError;
     +getResult: (void) => ParserResult;
-    +getState: (void) => string;
+    +getState: (void) => ParserState;
+    +hasError: (void) => boolean;
     +isDone: (void) => boolean;
+    +terminate: ParserStateTermination;
     +transition: ParserStateTransition;
 }
+
+export interface ParserError {
+    +detail?: string;
+    +type: ParserErrorType;
+}
+
+export type ParserErrorType =
+    | 'invalid-arg'
+    | 'invalid-flag'
+    | 'invalid-flag-value'
+    | 'invalid-name'
+    | 'multiple-values-not-allowed'
+    | 'no-value-found-for-flag'
+    | 'required-flag-not-found';
 
 export interface ParserResult {
     +args: { [name: string]: CommandOptionValue };
@@ -32,10 +49,8 @@ export interface ParserResult {
     +names: Array<string>;
 }
 
-export interface ParserState {
-    +enter: (args: Array<string>, parserContext: ParserContext,
-        programSpec: ProgramSpec) => void;
-}
+export type ParserState = (args: Array<string>,
+    parserContext: ParserContext, programSpec: ProgramSpec) => void;
 
 export interface ParserStateResult {
     +name: string;
@@ -45,4 +60,5 @@ export interface ParserStateResult {
 
 type ParserStateResultType = 'arg' | 'flag' | 'name';
 
-export type ParserStateTransition = (nextArgIndex: number, nextState: string, result?: ParserStateResult) => void;
+export type ParserStateTermination = (error?: ParserError) => void;
+export type ParserStateTransition = (nextArgIndex: number, nextState: ParserState, result?: ParserStateResult) => void;

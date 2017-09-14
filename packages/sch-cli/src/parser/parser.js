@@ -13,41 +13,15 @@ import type {
 } from '../spec';
 
 import {
-    DONE,
-    INITIAL,
-    INVALID_ARG,
-    INVALID_FLAG,
-    PARSE_ARG,
-    PARSE_COMMAND_OR_GROUP_NAME,
-    PARSE_COMMAND_NAME,
-    PARSE_GROUP_NAME,
-    PARSE_FLAG,
-    PARSE_FLAG_OR_ARG,
-    PARSE_FLAG_VALUE,
-    READ_ARG
-} from './labels';
-
-import {
     StateNotFoundError
 } from './errors';
 
-import {
-    DoneState,
-    InitialState,
-    InvalidArgState,
-    InvalidFlagState,
-    ParseArgState,
-    ParseCommandNameState,
-    ParseCommandOrGroupNameState,
-    ParseGroupNameState,
-    ParseFlagOrArgState,
-    ParseFlagState,
-    ParseFlagValueState
-} from './states';
+import States from './states';
 
 import type {
     Parser,
     ParserContext,
+    ParserError,
     ParserResult,
     ParserState,
     ParserStateResult,
@@ -188,12 +162,9 @@ class ParserResultBuilder implements ParserResult {
 
 export class StandardParser implements Parser {
     context: ParserContext;
-    states: { [label: string]: ParserState };
 
-    constructor (context: ParserContext,
-        states: { [label: string]: ParserState }) {
+    constructor (context: ParserContext) {
         this.context = context;
-        this.states = states;
     }
 
     parse (args: Array<string>, programSpec: ProgramSpec): void {
@@ -201,15 +172,12 @@ export class StandardParser implements Parser {
 
         while(!this.context.isDone()) {
             const argIndex = this.context.getArgIndex();
-            const label: string = this.context.getState();
-            const state: ?ParserState = this.states[label];
+            const state: ParserState = this.context.getState();
 
-            if(!state) {
-                throw new StateNotFoundError(label);
-            } else if (argIndex >= args.length) {
-                this.context.transition(argIndex, DONE);
+            if (argIndex >= args.length) {
+                this.context.terminate();
             } else {
-                state.enter(args, this.context, programSpec);
+                state(args, this.context, programSpec);
             }
         }
     }
@@ -217,50 +185,64 @@ export class StandardParser implements Parser {
 
 export class StandardParserContext implements ParserContext {
     argIndex: number;
+    error: ?ParserError;;
     result: ParserResultBuilder;
-    state: string;
+    state: ParserState;
 
     constructor () {
         this.argIndex = 0;
         this.result = ParserResultBuilder.new();
-        this.state = INITIAL;
+        this.state = States.Initial;
     }
 
     getArgIndex (): number {
         return this.argIndex;
     }
 
+    getError (): ?ParserError {
+        return this.error;
+    }
+
     getResult (): ParserResult {
         return this.result;
     }
 
-    getState (): string {
+    getState (): ParserState {
         return this.state;
     }
 
-    isDone (): boolean {
-        return this.state == DONE;
+    hasError (): boolean {
+        return this.error != null;
     }
 
-    transition (nextArgIndex: number, nextState: string, result?: ParserStateResult) {
+    isDone (): boolean {
+        return this.state == States.Done;
+    }
+
+    terminate (error?: ParserError) {
+        if (this.error) {
+            this.error = error;
+        }
+        this.transition(this.getArgIndex(), States.Done);
+    }
+
+    transition (nextArgIndex: number, nextState: ParserState, result?: ParserStateResult) {
         this.argIndex = nextArgIndex;
 
         if (result != null) {
-            const builder = ParserResultBuilder.new(this.result);
-
             switch (result.type) {
                 case 'arg':
                     if (result.value) {
-                        this.result = builder.arg(result.name, result.value);
+                        this.result.arg(result.name, result.value);
                     }
                     break;
                 case 'flag':
                     if (result.value) {
-                        this.result = builder.flag(result.name, result.value);
+                        this.result.flag(result.name, result.value);
                     }
                     break;
                 case 'name':
-                    this.result = builder.name(result.name);
+                    this.result.name(result.name);
                     break;
             }
         }
@@ -269,41 +251,6 @@ export class StandardParserContext implements ParserContext {
     }
 }
 
-class StateContainerBuilder {
-    states: { [label: string]: ParserState };
-
-    constructor () {
-        this.states = {};
-    }
-
-    static new() {
-        return new StateContainerBuilder();
-    }
-
-    add(label: string, state: ParserState): StateContainerBuilder {
-        this.states[label] = state;
-        return this;
-    }
-
-    build (): { [label: string]: ParserState } {
-        return this.states;
-    }
-}
-
 export function createParser () {
-    return new StandardParser(new StandardParserContext(),
-        StateContainerBuilder.new()
-            .add(DONE, new DoneState())
-            .add(INITIAL, new InitialState())
-            .add(INVALID_ARG, new InvalidArgState())
-            .add(INVALID_FLAG, new InvalidFlagState())
-            .add(PARSE_ARG, new ParseArgState())
-            .add(PARSE_COMMAND_NAME, new ParseCommandNameState())
-            .add(PARSE_COMMAND_OR_GROUP_NAME, new ParseCommandOrGroupNameState())
-            .add(PARSE_GROUP_NAME, new ParseGroupNameState())
-            .add(PARSE_FLAG, new ParseFlagState())
-            .add(PARSE_FLAG_OR_ARG, new ParseFlagOrArgState())
-            .add(PARSE_FLAG_VALUE, new ParseFlagValueState())
-            .add(READ_ARG, new ParseFlagState())
-            .build());
+    return new StandardParser(new StandardParserContext());
 }
