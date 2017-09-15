@@ -14,6 +14,12 @@ export interface GroupSpec {
     +groups: { [name: string]: GroupSpec };
 }
 
+export interface NamedGroupSpec {
+    +commands: { [name: string]: CommandSpec };
+    +groups: { [name: string]: GroupSpec };
+    name: string;
+}
+
 export interface NamedOptionSpec<T: OptionType> {
     +defaultValue: T | Process => T;
     +multiple: boolean;

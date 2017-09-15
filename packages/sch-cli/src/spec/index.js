@@ -6,7 +6,7 @@ export type {
     CommandSpec,
     GroupSpec,
     OptionSpec,
-    OptionType,
+    NamedGroupSpec,
     NamedOptionSpec,
     ProgramSpec
 } from './types';

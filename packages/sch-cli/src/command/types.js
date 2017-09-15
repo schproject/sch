@@ -3,7 +3,7 @@
  */
 
 import type { CommandSpec } from '../spec';
-import type { Process } from '../types';
+import type { PrimitiveType, PrimitiveArray, Process } from '../types';
 
 export interface Command {
     run (process: Process): void;
@@ -14,15 +14,7 @@ export interface CommandGroup {
     +groups: { [name: string]: CommandGroup };
 }
  
-export interface CommandOption<T: CommandOptionValue> {
+export interface CommandOption<T: PrimitiveType> {
     +name: string;
-    +value: T;
+    +value: T | PrimitiveArray<T>;
 }
-
-export type CommandOptionValue =
-    | Array<boolean>
-    | Array<number>
-    | Array<string>
-    | boolean
-    | number
-    | string;

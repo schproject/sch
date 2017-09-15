@@ -4,8 +4,6 @@
 
 import { IllegalStateEntryError } from './errors';
 
-import  { OptionParser } from './parser';
-
 import type {
     CommandSpec,
     GroupSpec,
@@ -59,20 +57,20 @@ export const InvalidName: ParserState = function (args: Array<string>,
 export const ParseArg: ParserState = function (args: Array<string>,
         parserContext: ParserContext, programSpec: ProgramSpec) {
     const result = parserContext.getResult();
-    const commandSpec = findCommandSpec(programSpec, result.names);
+    const commandSpec = findCommandSpec(programSpec,
+        result.groups().map(group => group.name));
 }
 
 export const ParseCommandName: ParserState = function (args: Array<string>,
         context: ParserContext, programSpec: ProgramSpec) {
     const name = args[context.getArgIndex()];
 
-    context.transition(context.getArgIndex() + 1,
-        ParseFlagOrArg, { name, type: 'name' });
+    context.transition(context.getArgIndex() + 1, ParseFlagOrArg);
 }
 
 export const ParseCommandOrGroupName: ParserState = function (args: Array<string>,
         context: ParserContext, programSpec: ProgramSpec) {
-    const names = context.getResult().names;
+    const names = context.getResult().groups().map(group => group.name);
     const nextName = args[context.getArgIndex()];
 
     const groupSpec = findGroupSpec(programSpec, names);
@@ -100,7 +98,8 @@ export const ParseFlagOrArg: ParserState = function (args: Array<string>,
 export const ParseFlag: ParserState = function (args: Array<string>,
         context: ParserContext, programSpec: ProgramSpec) {
     const name = args[context.getArgIndex()],
-        commandSpec = findCommandSpec(programSpec, context.getResult().names),
+        commandSpec = findCommandSpec(programSpec,
+        context.getResult().groups().map(group => group.name)),
         valueIndex = context.getArgIndex() + 1;
 
     if (!commandSpec) {
@@ -124,8 +123,7 @@ export const ParseFlag: ParserState = function (args: Array<string>,
         } else if (!flagSpec.multiple && context.getResult().flags[name]) {
             context.terminate({ type: 'multiple-values-not-allowed' });
         } else {
-            context.transition(context.getArgIndex() + 2,
-                ParseFlagOrArg, { name, type: 'flag', rawValue });
+            context.transition(context.getArgIndex() + 2, ParseFlagOrArg);
         }
     }
 }
@@ -133,7 +131,8 @@ export const ParseFlag: ParserState = function (args: Array<string>,
 export const ParseFlagValue: ParserState = function (args: Array<string>,
         context: ParserContext, programSpec: ProgramSpec) {
     const name = args[context.getArgIndex()],
-        commandSpec = findCommandSpec(programSpec, context.getResult().names),
+        commandSpec = findCommandSpec(programSpec,
+            context.getResult().groups.map(group => group.name)),
         valueIndex = context.getArgIndex() + 1;
 
     if (!commandSpec) {
@@ -152,8 +151,7 @@ export const ParseGroupName: ParserState = function (args: Array<string>,
     const name = args[context.getArgIndex()];
 
     if (programSpec.groups[name]) {
-        context.transition(context.getArgIndex() + 1,
-            ParseCommandOrGroupName, { name, type: 'name' });
+        context.transition(context.getArgIndex() + 1, ParseCommandOrGroupName);
     } else {
     }
 }

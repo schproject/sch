@@ -2,17 +2,24 @@
  * @flow
  */
 
-import type {
-    CommandOption,
-    CommandOptionValue
-} from '../command';
+import type { CommandOption } from '../command';
 
 import type {
-    OptionType,
+    CommandSpec,
+    GroupSpec,
+    OptionSpec,
+    NamedGroupSpec,
+    NamedOptionSpec,
     ProgramSpec
 } from '../spec';
 
-import { Process } from '../types';
+import type { PrimitiveArray, PrimitiveType, Process } from '../types';
+
+export interface NamedOptionSpecAndValue<T: PrimitiveType> {
+    +name: string;
+    +spec:  NamedOptionSpec<T>;
+    +value: T | Array<T>;
+}
 
 export interface Parser {
     +parse: (args: Array<string>, commandSpec: ProgramSpec) => void;
@@ -44,21 +51,25 @@ export type ParserErrorType =
     | 'required-flag-not-found';
 
 export interface ParserResult {
-    +args: { [name: string]: CommandOptionValue };
-    +flags: { [name: string]: CommandOptionValue };
-    +names: Array<string>;
+    +arg: (name: string) => NamedOptionSpecAndValue<*>;
+    +args: (void) => Array<NamedOptionSpecAndValue<*>>;
+    +command: () => CommandSpec;
+    +error: (void) => null | ParserError;
+    +flag: (name: string) => NamedOptionSpecAndValue<*>;
+    +flags: (void) => { [name: string]: NamedOptionSpecAndValue<*> };
+    +groups: (void) => Array<NamedGroupSpec>;
 }
 
-export type ParserState = (args: Array<string>,
-    parserContext: ParserContext, programSpec: ProgramSpec) => void;
-
-export interface ParserStateResult {
-    +name: string;
-    +type: ParserStateResultType;
-    +value?: CommandOptionValue;
+export interface ParserResultCollector {
+    +arg: (arg: NamedOptionSpecAndValue<*>) => ParserResultCollector; 
+    +command: (commandSpec: CommandSpec) => ParserResultCollector;
+    +error: (error: ParserError) => ParserResultCollector;
+    +flag: (flag: NamedOptionSpecAndValue<*>) => ParserResultCollector;
+    +group: (group: NamedGroupSpec) => ParserResultCollector;
 }
 
-type ParserStateResultType = 'arg' | 'flag' | 'name';
+export type ParserState = (args: Array<string>, parserContext: ParserContext,
+    programSpec: ProgramSpec, resultCollector: ParserResultCollector) => void;
 
 export type ParserStateTermination = (error?: ParserError) => void;
-export type ParserStateTransition = (nextArgIndex: number, nextState: ParserState, result?: ParserStateResult) => void;
+export type ParserStateTransition = (nextArgIndex: number, nextState: ParserState) => void;

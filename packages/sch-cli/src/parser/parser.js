@@ -2,168 +2,55 @@
  * @flow
  */
 
-import type {
-    CommandOptionValue
-} from '../command';
+import { IllegalStateError } from '../errors';
+
+import { StateNotFoundError } from './errors';
 
 import type {
+    CommandSpec,
+    GroupSpec,
     ProgramSpec,
-    OptionSpec,
-    OptionType
+    NamedGroupSpec,
+    OptionSpec
 } from '../spec';
 
-import {
-    StateNotFoundError
-} from './errors';
-
 import States from './states';
+
+import type { PrimitiveType } from '../types';
 
 import type {
     Parser,
     ParserContext,
     ParserError,
     ParserResult,
+    ParserResultCollector,
     ParserState,
-    ParserStateResult,
-    ParserStateTransition
+    ParserStateTransition,
+    NamedOptionSpecAndValue,
 } from './types';
 
 const INITIAL_PARSER_RESULT: ParserResult = {
-    args: {},
-    flags: {},
-    names: []
+    arg: (name: string) => {
+        throw new IllegalStateError('There is no arg present with name "' + name + '" present in result');
+    },
+    args: () => [],
+    command: () => {
+        throw new IllegalStateError('There is no command spec present in result');
+    },
+    error: () => null,
+    flag: (name: string) => {
+        throw new IllegalStateError('There is no flag present with name "' + name + '" present in result');
+    },
+    flags: () => { return {}; },
+    groups: () => []
 };
-
-export class OptionParser<T: OptionType> {
-    option: OptionSpec<T>;
-    refiner: OptionRefiner<T>;
-    value: T | Array<T>;
-
-    constructor (option: OptionSpec<T>) {
-        this.option = option;
-        this.refiner = new OptionRefiner(this, option.sample);
-
-        if (option.multiple) {
-            this.value = (this.refiner.switch({
-                boolean: (_) => ([]: Array<boolean>),
-                number: (_) => ([]: Array<number>),
-                string: (_) => ([]: Array<string>)
-            }): Array<T>);
-        }
-    }
-
-    parse (value: string): OptionParser<T> {
-        const typedValue = this.refiner.cast(value);
-
-        if (this.value instanceof Array) {
-            this.value.push(typedValue);
-        } else {
-            this.value = typedValue;
-        }
-
-        return this;
-    }
-
-    result () {
-        return this.value instanceof Array
-            ? this.value.slice()
-            : this.value;
-    }
-}
-
-class OptionRefiner<T: OptionType> {
-    context: any;
-    type: string;
-
-    constructor (context: any, sample: T) {
-        this.context = context;
-        this.type = typeof sample;
-    }
-
-    cast (value: string): T {
-        return this.switch({
-            boolean: value => value,
-            number: value => value,
-            string: value => value
-        }, value);
-    }
-
-    switch (callbacks: {
-                'boolean': boolean => *,
-                'number': number => *,
-                'string': string => *
-            }, value?: string): * {
-        switch (this.type) {
-            case 'boolean':
-                return callbacks.boolean
-                    .bind(this.context)((new Boolean(value)).valueOf());
-            case 'number':
-                return callbacks.number
-                    .bind(this.context)((new Number(value)).valueOf());
-            case 'string':
-                return callbacks.string
-                    .bind(this.context)((new String(value)).valueOf());
-        }
-    }
-}
-
-class ParserResultBuilder implements ParserResult {
-    static new (initialParserResult: ParserResult = INITIAL_PARSER_RESULT) {
-        return new ParserResultBuilder(initialParserResult);
-    }
-
-    args: Map<string, CommandOptionValue>;
-    flags: Map<string, CommandOptionValue>;
-    names: Array<string>;
-
-    constructor ({ args, flags, names }: ParserResult) {
-        this.args = Object.keys(args).reduce((map, key) => {
-            map.set(key, args[key]);
-            return map;
-        }, new Map());
-
-        this.flags = Object.keys(flags).reduce((map, key) => {
-            map.set(key, flags[key]);
-            return map;
-        }, new Map());
-
-        this.names = names.slice();
-    }
-
-    arg (name: string, value: CommandOptionValue): ParserResultBuilder {
-        this.args.set(name, value);
-        return this;
-    }
-
-    build (): ParserResult {
-        return {
-            args: Array.from(this.args).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}),
-            flags: Array.from(this.flags).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}),
-            names: this.names.slice()
-        };
-    }
-
-    flag (name: string, value: CommandOptionValue): ParserResultBuilder {
-        this.flags.set(name, value);
-        return this;
-    }
-
-    name (name: string): ParserResultBuilder {
-        this.names.push(name);
-        return this;
-    }
-}
 
 export class StandardParser implements Parser {
     context: ParserContext;
+    resultCollector: ParserResultCollector;
 
-    constructor (context: ParserContext) {
+    constructor (context: ParserContext,
+            resultCollector: ParserResultCollector) {
         this.context = context;
     }
 
@@ -177,7 +64,7 @@ export class StandardParser implements Parser {
             if (argIndex >= args.length) {
                 this.context.terminate();
             } else {
-                state(args, this.context, programSpec);
+                state(args, this.context, programSpec, this.resultCollector);
             }
         }
     }
@@ -185,13 +72,11 @@ export class StandardParser implements Parser {
 
 export class StandardParserContext implements ParserContext {
     argIndex: number;
-    error: ?ParserError;;
-    result: ParserResultBuilder;
+    error: ?ParserError;
     state: ParserState;
 
     constructor () {
         this.argIndex = 0;
-        this.result = ParserResultBuilder.new();
         this.state = States.Initial;
     }
 
@@ -204,7 +89,7 @@ export class StandardParserContext implements ParserContext {
     }
 
     getResult (): ParserResult {
-        return this.result;
+        return INITIAL_PARSER_RESULT;
     }
 
     getState (): ParserState {
@@ -226,31 +111,42 @@ export class StandardParserContext implements ParserContext {
         this.transition(this.getArgIndex(), States.Done);
     }
 
-    transition (nextArgIndex: number, nextState: ParserState, result?: ParserStateResult) {
+    transition (nextArgIndex: number, nextState: ParserState) {
         this.argIndex = nextArgIndex;
-
-        if (result != null) {
-            switch (result.type) {
-                case 'arg':
-                    if (result.value) {
-                        this.result.arg(result.name, result.value);
-                    }
-                    break;
-                case 'flag':
-                    if (result.value) {
-                        this.result.flag(result.name, result.value);
-                    }
-                    break;
-                case 'name':
-                    this.result.name(result.name);
-                    break;
-            }
-        }
-
         this.state = nextState;
     }
 }
 
+export class StandardParserResultCollector implements ParserResultCollector {
+    args: Map<string, NamedOptionSpecAndValue<*>>;
+
+    constructor () {
+        this.args = new Map();
+    }
+
+    arg (arg: NamedOptionSpecAndValue<*>): ParserResultCollector {
+        this.args.set(arg.name, arg);
+        return this;
+    }
+
+    command (commandSpec: CommandSpec): ParserResultCollector {
+        return this;
+    }
+
+    error (error: ParserError): ParserResultCollector {
+        return this;
+    }
+
+    flag (flag: NamedOptionSpecAndValue<*>): ParserResultCollector {
+        return this;
+    }
+
+    group (group: NamedGroupSpec): ParserResultCollector {
+        return this;
+    }
+}
+
 export function createParser () {
-    return new StandardParser(new StandardParserContext());
+    return new StandardParser(new StandardParserContext(),
+        new StandardParserResultCollector());
 }

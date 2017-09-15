@@ -8,12 +8,11 @@ import type {
     CommandSpec,
     GroupSpec,
     OptionSpec,
-    OptionType,
     NamedOptionSpec,
     ProgramSpec
 } from './types';
 
-import type { Process } from '../types';
+import type { PrimitiveType, Process } from '../types';
 
 class CommandSpecBuilder {
     _args: Array<NamedOptionSpec<*>>;
@@ -88,7 +87,7 @@ class GroupSpecBuilder {
     }
 }
 
-class OptionSpecBuilder<T: OptionType> {
+class OptionSpecBuilder<T: PrimitiveType> {
     _defaultValue: T | Process => T;
     _multiple: boolean;
     _optional: boolean;

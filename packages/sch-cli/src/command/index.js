@@ -5,8 +5,7 @@
 export type {
     Command,
     CommandGroup,
-    CommandOption,
-    CommandOptionValue
+    CommandOption
 } from './types';
 
 export { default as registry } from './registry';

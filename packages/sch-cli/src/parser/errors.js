@@ -2,10 +2,7 @@
  * @flow
  */
 
-import type {
-    OptionSpec,
-    OptionType
-} from '../spec';
+import type { OptionSpec } from '../spec';
 
 export class ParserError extends Error {}
 
