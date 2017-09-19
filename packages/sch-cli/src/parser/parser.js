@@ -10,7 +10,6 @@ import type {
     CommandSpec,
     GroupSpec,
     ProgramSpec,
-    NamedGroupSpec,
     OptionSpec
 } from '../spec';
 
@@ -19,14 +18,14 @@ import States from './states';
 import type { PrimitiveType } from '../types';
 
 import type {
+    OptionSpecAndValue,
     Parser,
     ParserContext,
     ParserError,
     ParserResult,
-    ParserResultCollector,
+    ParserResultBuilder,
     ParserState,
-    ParserStateTransition,
-    NamedOptionSpecAndValue,
+    ParserStateTransition
 } from './types';
 
 const INITIAL_PARSER_RESULT: ParserResult = {
@@ -45,108 +44,170 @@ const INITIAL_PARSER_RESULT: ParserResult = {
     groups: () => []
 };
 
-export class StandardParser implements Parser {
-    context: ParserContext;
-    resultCollector: ParserResultCollector;
+export class StandardParserResultBuilder implements ParserResultBuilder {
+    _args: Array<[string, OptionSpecAndValue<*>]>;
+    _command: ?CommandSpec;
+    _error: ?ParserError;
+    _flags: Map<string, OptionSpecAndValue<*>>;
+    _groups: Map<string, GroupSpec>;
 
-    constructor (context: ParserContext,
-            resultCollector: ParserResultCollector) {
-        this.context = context;
+    constructor () {
+        this._args = [];
+        this._flags = new Map();
+        this._groups = new Map();
     }
 
-    parse (args: Array<string>, programSpec: ProgramSpec): void {
-        const transition = this.context.transition.bind(this.context);
-
-        while(!this.context.isDone()) {
-            const argIndex = this.context.getArgIndex();
-            const state: ParserState = this.context.getState();
-
-            if (argIndex >= args.length) {
-                this.context.terminate();
-            } else {
-                state(args, this.context, programSpec, this.resultCollector);
-            }
+    arg (name: string, arg: OptionSpecAndValue<*>): ParserResultBuilder {
+        if (this._args.find(tuple => tuple[0] == name)) {
+            throw new IllegalStateError('An argument with this name has already been collected: ' + name);
         }
+
+        this._args.push([name, arg]);
+
+        return this;
+    }
+
+    command (commandSpec: CommandSpec): ParserResultBuilder {
+        if (this._command != null) {
+            throw new IllegalStateError('A command spec has already been collected');
+        }
+
+        this._command = commandSpec;
+
+        return this;
+    }
+
+    error (error: ParserError): ParserResultBuilder {
+        if (this._error) {
+            throw new IllegalStateError('A parser error has already been collected');
+        }
+
+        this._error = error;
+
+        return this;
+    }
+
+    flag (name: string, flag: OptionSpecAndValue<*>): ParserResultBuilder {
+        if (this._flags.has(name)) {
+            throw new IllegalStateError('A flag with this name has already been collected: ' + name);
+        }
+
+        this._flags.set(name, flag);
+
+        return this;
+    }
+
+    group (name: string, group: GroupSpec): ParserResultBuilder {
+        if (this._groups.has(name)) {
+            throw new IllegalStateError('A group with this name has already been collected: ' + name);
+        }
+
+        this._groups.set(name, group);
+
+        return this;
+    }
+
+    result (): ParserResult {
+        return new StandardParserResult(
+            this._args.slice(),
+            this._command,
+            this._error,
+            Array.from(this._flags).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}));
     }
 }
 
-export class StandardParserContext implements ParserContext {
-    argIndex: number;
-    error: ?ParserError;
-    state: ParserState;
+export class StandardParser implements Parser {
+    context: ParserContext;
+    resultBuilder: ParserResultBuilder;
 
-    constructor () {
-        this.argIndex = 0;
-        this.state = States.Initial;
+    constructor (context: ParserContext,
+            resultBuilder: ParserResultBuilder) {
+        this.context = context;
+        this.resultBuilder = resultBuilder;
     }
 
-    getArgIndex (): number {
-        return this.argIndex;
+    parse (): void {
+        this.parse_(0, this.context.args, this.context.program, States.Initial);
     }
 
-    getError (): ?ParserError {
+    parse_ (argIndex: number, args: Array<string>, program: ProgramSpec, state: ParserState) {
+        if (argIndex >= args.length || state == States.Done) return;
+
+        const parse = this.parse;
+        const transition = function (nextArgIndex: number, nextState: ParserState) {
+            //parse(nextArgIndex, args, program, nextState);
+        }
+
+        const result = this.resultBuilder.build();
+        state.call(null, argIndex, args, program, this.resultBuilder, result, transition.bind(this));
+    }
+}
+
+export class StandardParserResult {
+    _args: Array<[string, OptionSpecAndValue<*>]>;
+    _command: ?CommandSpec;
+    _error: ?ParserError;
+    _groups: Array<[string, GroupSpec]>;
+    _flags: { [name: string]: OptionSpecAndValue<*> };
+
+    constructor (args: Array<[string, OptionSpecAndValue<*>]>,
+            command: ?CommandSpec, error: ?ParserError,
+            flags: { [name: string]: OptionSpecAndValue<*> }) {
+        this._args = args;
+        this._command = command;
+        this._error = error;
+        this._flags = flags;
+    }
+
+    arg (name: string): OptionSpecAndValue<*> {
+        const tuple = this._args.find(tuple => tuple[0] == name);
+
+        if (!tuple) {
+            throw new IllegalStateError('No arg is present in this result with the requested name: ' + name);
+        }
+
+        return tuple[1];
+    }
+
+    args (): Array<[string, OptionSpecAndValue<*>]> {
+        return this._args.slice();
+    }
+
+    command (): CommandSpec {
+        if (this._command == null) {
+            throw new IllegalStateError('No command is present in this result');
+        } else {
+            return this._command;
+        }
+    }
+
+    error (): ?ParserError {
         return this.error;
     }
 
-    getResult (): ParserResult {
-        return INITIAL_PARSER_RESULT;
-    }
+    flag (name: string): OptionSpecAndValue<*> {
+        const flag: ?OptionSpecAndValue<*> = this._flags[name];
 
-    getState (): ParserState {
-        return this.state;
-    }
-
-    hasError (): boolean {
-        return this.error != null;
-    }
-
-    isDone (): boolean {
-        return this.state == States.Done;
-    }
-
-    terminate (error?: ParserError) {
-        if (this.error) {
-            this.error = error;
+        if (!flag) {
+            throw new IllegalStateError('No flag is present in this result with the requested name: ' + name);
         }
-        this.transition(this.getArgIndex(), States.Done);
+
+        return flag;
     }
 
-    transition (nextArgIndex: number, nextState: ParserState) {
-        this.argIndex = nextArgIndex;
-        this.state = nextState;
-    }
-}
-
-export class StandardParserResultCollector implements ParserResultCollector {
-    args: Map<string, NamedOptionSpecAndValue<*>>;
-
-    constructor () {
-        this.args = new Map();
+    flags (): { [name: string]: OptionSpecAndValue<*> } {
+        return this._flags;
     }
 
-    arg (arg: NamedOptionSpecAndValue<*>): ParserResultCollector {
-        this.args.set(arg.name, arg);
-        return this;
-    }
-
-    command (commandSpec: CommandSpec): ParserResultCollector {
-        return this;
-    }
-
-    error (error: ParserError): ParserResultCollector {
-        return this;
-    }
-
-    flag (flag: NamedOptionSpecAndValue<*>): ParserResultCollector {
-        return this;
-    }
-
-    group (group: NamedGroupSpec): ParserResultCollector {
-        return this;
+    groups (): Array<[string, GroupSpec]> {
+        return this._groups;
     }
 }
 
-export function createParser () {
-    return new StandardParser(new StandardParserContext(),
-        new StandardParserResultCollector());
+export function createParser (args: Array<string>, program: ProgramSpec) {
+    return new StandardParser({ args, program },
+        new StandardParserResultBuilder());
 }

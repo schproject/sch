@@ -2,6 +2,10 @@
  * @flow
  */
 
+export interface Builder<T> {
+    +build: (void) => T;
+}
+
 export interface Process {
     argv: Array<string>;
     cwd: () => string;

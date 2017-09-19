@@ -23,136 +23,127 @@ import {
 
 import type {
     ParserContext,
+    ParserReporter,
+    ParserResult,
     ParserState,
     ParserStateTransition
 } from './types';
 
-export const Done: ParserState = function (args: Array<string>,
-        parserContext: ParserContext, programSpec: ProgramSpec) {
+export const Done: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec,
+        report: ParserReporter, result: ParserResult,
+        transition: ParserStateTransition) {
     throw new IllegalStateEntryError('Cannot enter the done state');
 }
 
-export const Initial: ParserState = function (args: Array<string>,
-        parserContext: ParserContext, programSpec: ProgramSpec) {
-    parserContext.transition(parserContext.getArgIndex(),
-        ParseCommandOrGroupName
-    );
+export const Initial: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec,
+        reporter: ParserReporter, result: ParserResult,
+        transition: ParserStateTransition) {
+    transition(argIndex, ParseCommandOrGroupName);
 }
 
-export const InvalidArg: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    context.terminate({ type: 'invalid-arg' });
+export const InvalidArg: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    report.error({ type: 'invalid-arg' });
+    transition(argIndex, Done);
 }
 
-export const InvalidFlag: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    context.terminate({ type: 'invalid-flag' });
+export const InvalidFlag: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    report.error({ type: 'invalid-flag' });
+    transition(argIndex, Done);
 }
 
-export const InvalidName: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    context.terminate({ type: 'invalid-name' });
+export const InvalidFlagValue: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    report.error({ type: 'invalid-flag-value' });
+    transition(argIndex, Done);
 }
 
-export const ParseArg: ParserState = function (args: Array<string>,
-        parserContext: ParserContext, programSpec: ProgramSpec) {
-    const result = parserContext.getResult();
-    const commandSpec = findCommandSpec(programSpec,
-        result.groups().map(group => group.name));
+export const InvalidName: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    report.error({ type: 'invalid-name' });
+    transition(argIndex, Done);
 }
 
-export const ParseCommandName: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    const name = args[context.getArgIndex()];
-
-    context.transition(context.getArgIndex() + 1, ParseFlagOrArg);
+export const ParseArg: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
 }
 
-export const ParseCommandOrGroupName: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    const names = context.getResult().groups().map(group => group.name);
-    const nextName = args[context.getArgIndex()];
+export const ParseCommandOrGroupName: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    const names = result.groups().map(group => group[0]),
+        groupSpec = findGroupSpec(program, names),
+        nextName = args[argIndex];
 
-    const groupSpec = findGroupSpec(programSpec, names);
-
-    if (!groupSpec) {
+    if (groupSpec == null) {
         throw new IllegalStateEntryError('No group spec found');
-    } else if (groupSpec.commands[nextName]) {
-        context.transition(context.getArgIndex(), ParseCommandName);
+    }
+
+    if (groupSpec.commands[nextName]) {
+        report.command(groupSpec.commands[nextName]);
+        transition(argIndex + 1, ParseFlagOrArg);
     } else if (groupSpec.groups[nextName]) {
-        context.transition(context.getArgIndex(), ParseGroupName);
+        report.group(nextName, groupSpec.groups[nextName]);
+        transition(argIndex + 1, ParseCommandOrGroupName);
     } else {
-        context.terminate({ type: 'invalid-name' });
+        transition(argIndex, InvalidName);
     }
 }
 
-export const ParseFlagOrArg: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    if (args[context.getArgIndex()].startsWith('-')) {
-        context.transition(context.getArgIndex(), ParseFlag);
+export const ParseFlag: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    const name = args[argIndex],
+        commandSpec = result.command(),
+        valueIndex = argIndex + 1;
+
+    const spec = commandSpec.flags[name];
+
+    if (spec == null) {
+        transition(argIndex, InvalidFlag);
     } else {
-        context.transition(context.getArgIndex(), ParseArg);
+        report.flag(name, { spec });
+        transition(argIndex, ParseFlagValue);
     }
 }
 
-export const ParseFlag: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    const name = args[context.getArgIndex()],
-        commandSpec = findCommandSpec(programSpec,
-        context.getResult().groups().map(group => group.name)),
-        valueIndex = context.getArgIndex() + 1;
-
-    if (!commandSpec) {
-        throw new IllegalStateEntryError('No command spec found');
-    }
-
-    const flagSpec = commandSpec.flags[name];
-
-    if (!flagSpec) {
-        context.terminate({ type: 'invalid-flag' });
+export const ParseFlagOrArg: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    if (args[argIndex].startsWith('-')) {
+        transition(argIndex, ParseFlag);
     } else {
-        let rawValue;
-        if (valueIndex < args.length && !args[valueIndex].startsWith('-')) {
-            rawValue = args[valueIndex];
-        } else if (typeof flagSpec.sample == 'boolean') {
-            rawValue = true;
-        }
+        transition(argIndex, ParseArg);
+    }
+}
 
-        if (!rawValue) {
-            context.terminate({ type: 'no-value-found-for-flag' });
-        } else if (!flagSpec.multiple && context.getResult().flags[name]) {
-            context.terminate({ type: 'multiple-values-not-allowed' });
+export const ParseFlagValue: ParserState = function (argIndex: number,
+        args: Array<string>, program: ProgramSpec, report: ParserReporter,
+        result: ParserResult, transition: ParserStateTransition) {
+    const [ name, value ] = args.slice(argIndex, argIndex + 1),
+        { spec } = result.flag(name);
+
+    if (!value || value.startsWith('-')) {
+        if (typeof spec.sample == 'boolean') {
+            report.flag(name, { spec, value: true });
+            transition(argIndex + 2, ParseFlagOrArg);
         } else {
-            context.transition(context.getArgIndex() + 2, ParseFlagOrArg);
+            transition(argIndex, InvalidFlagValue);
         }
-    }
-}
-
-export const ParseFlagValue: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    const name = args[context.getArgIndex()],
-        commandSpec = findCommandSpec(programSpec,
-            context.getResult().groups.map(group => group.name)),
-        valueIndex = context.getArgIndex() + 1;
-
-    if (!commandSpec) {
-        throw new IllegalStateEntryError('No command spec found');
-    }
-
-    const flagSpec = commandSpec.flags[name];
-
-    if (!flagSpec) {
-        throw new IllegalStateEntryError('No flag spec found');
-    }
-}
-
-export const ParseGroupName: ParserState = function (args: Array<string>,
-        context: ParserContext, programSpec: ProgramSpec) {
-    const name = args[context.getArgIndex()];
-
-    if (programSpec.groups[name]) {
-        context.transition(context.getArgIndex() + 1, ParseCommandOrGroupName);
     } else {
+        report.flag(name, {
+            spec,
+            value: (value: typeof spec.sample)
+        });
+        transition(argIndex + 2, ParseFlagOrArg);
     }
 }
 
@@ -161,12 +152,11 @@ export default {
     Initial,
     InvalidArg,
     InvalidFlag,
+    InvalidFlagValue,
     InvalidName,
     ParseArg,
-    ParseCommandName,
     ParseCommandOrGroupName,
     ParseFlagOrArg,
     ParseFlag,
-    ParseFlagValue,
-    ParseGroupName
+    ParseFlagValue
 }

@@ -8,32 +8,23 @@ import type {
     CommandSpec,
     GroupSpec,
     OptionSpec,
-    NamedGroupSpec,
-    NamedOptionSpec,
     ProgramSpec
 } from '../spec';
 
-import type { PrimitiveArray, PrimitiveType, Process } from '../types';
+import type { Builder, PrimitiveArray, PrimitiveType, Process } from '../types';
 
-export interface NamedOptionSpecAndValue<T: PrimitiveType> {
-    +name: string;
-    +spec:  NamedOptionSpec<T>;
-    +value: T | Array<T>;
+export interface OptionSpecAndValue<T: PrimitiveType> {
+    +spec:  OptionSpec<T>;
+    +value?: T | Array<T>;
 }
 
 export interface Parser {
-    +parse: (args: Array<string>, commandSpec: ProgramSpec) => void;
+    +parse: (void) => void;
 }
 
 export interface ParserContext {
-    +getArgIndex: (void) => number;
-    +getError: (void) => ?ParserError;
-    +getResult: (void) => ParserResult;
-    +getState: (void) => ParserState;
-    +hasError: (void) => boolean;
-    +isDone: (void) => boolean;
-    +terminate: ParserStateTermination;
-    +transition: ParserStateTransition;
+    +args: Array<string>;
+    +program: ProgramSpec;
 }
 
 export interface ParserError {
@@ -50,26 +41,33 @@ export type ParserErrorType =
     | 'no-value-found-for-flag'
     | 'required-flag-not-found';
 
+export interface ParserReporter {
+    +arg: (name: string, arg: OptionSpecAndValue<*>) => ParserReporter; 
+    +command: (commandSpec: CommandSpec) => ParserReporter;
+    +error: (error: ParserError) => ParserReporter;
+    +flag: (name: string, flag: OptionSpec<*>) => ParserReporter;
+    +flag: (name: string, flag: OptionSpecAndValue<*>) => ParserReporter;
+    +group: (name: string, group: GroupSpec) => ParserReporter;
+    +result: (void) => ParserResult;
+}
+
 export interface ParserResult {
-    +arg: (name: string) => NamedOptionSpecAndValue<*>;
-    +args: (void) => Array<NamedOptionSpecAndValue<*>>;
+    +arg: (name: string) => OptionSpecAndValue<*>;
+    +args: (void) => Array<[string, OptionSpecAndValue<*>]>;
     +command: () => CommandSpec;
-    +error: (void) => null | ParserError;
-    +flag: (name: string) => NamedOptionSpecAndValue<*>;
-    +flags: (void) => { [name: string]: NamedOptionSpecAndValue<*> };
-    +groups: (void) => Array<NamedGroupSpec>;
+    +error: (void) => ?ParserError;
+    +flag: (name: string) => OptionSpecAndValue<*>;
+    +flags: (void) => { [name: string]: OptionSpecAndValue<*> };
+    +groups: (void) => Array<[string, GroupSpec]>;
 }
 
-export interface ParserResultCollector {
-    +arg: (arg: NamedOptionSpecAndValue<*>) => ParserResultCollector; 
-    +command: (commandSpec: CommandSpec) => ParserResultCollector;
-    +error: (error: ParserError) => ParserResultCollector;
-    +flag: (flag: NamedOptionSpecAndValue<*>) => ParserResultCollector;
-    +group: (group: NamedGroupSpec) => ParserResultCollector;
+export interface ParserResultFactory {
+    +result: (void) => ParserResult;
 }
 
-export type ParserState = (args: Array<string>, parserContext: ParserContext,
-    programSpec: ProgramSpec, resultCollector: ParserResultCollector) => void;
+export type ParserResultBuilder = Builder<ParserResult> & ParserReporter;
 
-export type ParserStateTermination = (error?: ParserError) => void;
+export type ParserState = (argIndex: number, args: Array<string>, program: ProgramSpec,
+    reporter: ParserReporter, result: ParserResult, transition: ParserStateTransition) => void;
+
 export type ParserStateTransition = (nextArgIndex: number, nextState: ParserState) => void;

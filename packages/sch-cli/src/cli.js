@@ -10,8 +10,7 @@ import { createParser } from './parser';
 
 export function run ({ argv, cwd, env }: Process) {
     const rawArgs = argv.slice(2),
-        parser: Parser = createParser(),
-        spec:ProgramSpec = registry.spec;
+        parser: Parser = createParser(rawArgs, registry.spec);
 
-    parser.parse(rawArgs, spec);
+    parser.parse();
 }
