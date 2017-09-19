@@ -65,7 +65,7 @@ export interface ParserResultFactory {
     +result: (void) => ParserResult;
 }
 
-export type ParserResultBuilder = Builder<ParserResult> & ParserReporter;
+export type ParserResultBuilder = ParserReporter & Builder<ParserResult>;
 
 export type ParserState = (argIndex: number, args: Array<string>, program: ProgramSpec,
     reporter: ParserReporter, result: ParserResult, transition: ParserStateTransition) => void;

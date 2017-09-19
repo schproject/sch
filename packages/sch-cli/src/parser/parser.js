@@ -49,12 +49,24 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
     _command: ?CommandSpec;
     _error: ?ParserError;
     _flags: Map<string, OptionSpecAndValue<*>>;
-    _groups: Map<string, GroupSpec>;
+    _groups: Array<[string, GroupSpec]>;
 
     constructor () {
         this._args = [];
         this._flags = new Map();
-        this._groups = new Map();
+        this._groups = [];
+    }
+
+    build (): ParserResult {
+        return new StandardParserResult(
+            this._args.slice(),
+            this._command,
+            this._error,
+            Array.from(this._flags).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+            }, {}),
+            this._groups.slice());
     }
 
     arg (name: string, arg: OptionSpecAndValue<*>): ParserResultBuilder {
@@ -98,24 +110,13 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
     }
 
     group (name: string, group: GroupSpec): ParserResultBuilder {
-        if (this._groups.has(name)) {
+        if (this._groups.find(tuple => tuple[0] == name)) {
             throw new IllegalStateError('A group with this name has already been collected: ' + name);
         }
 
-        this._groups.set(name, group);
+        this._groups.push([name, group]);
 
         return this;
-    }
-
-    result (): ParserResult {
-        return new StandardParserResult(
-            this._args.slice(),
-            this._command,
-            this._error,
-            Array.from(this._flags).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}));
     }
 }
 
@@ -136,9 +137,9 @@ export class StandardParser implements Parser {
     parse_ (argIndex: number, args: Array<string>, program: ProgramSpec, state: ParserState) {
         if (argIndex >= args.length || state == States.Done) return;
 
-        const parse = this.parse;
+        const parse = this.parse_.bind(this);
         const transition = function (nextArgIndex: number, nextState: ParserState) {
-            //parse(nextArgIndex, args, program, nextState);
+            parse(nextArgIndex, args, program, nextState);
         }
 
         const result = this.resultBuilder.build();
@@ -155,11 +156,13 @@ export class StandardParserResult {
 
     constructor (args: Array<[string, OptionSpecAndValue<*>]>,
             command: ?CommandSpec, error: ?ParserError,
-            flags: { [name: string]: OptionSpecAndValue<*> }) {
+            flags: { [name: string]: OptionSpecAndValue<*> },
+            groups: Array<[string, GroupSpec]>) {
         this._args = args;
         this._command = command;
         this._error = error;
         this._flags = flags;
+        this._groups = groups;
     }
 
     arg (name: string): OptionSpecAndValue<*> {
