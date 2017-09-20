@@ -2,11 +2,7 @@
  * @flow
  */
 
-import type {
-    CommandSpec,
-    GroupSpec,
-    ProgramSpec
-} from './types';
+import type { CommandSpec, GroupSpec, ProgramSpec } from './types';
 
 export function findCommandSpec (spec: GroupSpec|ProgramSpec,
         names: Array<string>): ?CommandSpec {

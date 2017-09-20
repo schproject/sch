@@ -2,13 +2,8 @@
  * @flow
  */
 
-import type { GroupSpec } from '../spec';
-import type { Process } from '../types';
-
-import type {
-    Command,
-    CommandGroup
-} from './types';
+import type { Command, CommandGroup, GroupSpec  } from 'sch-cli-opts';
+import type { Process } from 'sch-common';
 
 import log from './log';
 

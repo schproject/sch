@@ -4,11 +4,11 @@
 
 import loglevel from 'loglevel';
 
+import type { PrimitiveType, PrimitiveArray } from 'sch-common';
+
 import { IllegalStateError } from '../errors';
 
 import type { CommandSpec, GroupSpec, ProgramSpec, OptionSpec } from '../spec';
-
-import type { PrimitiveType, PrimitiveArray } from '../types';
 
 import { StateNotFoundError } from './errors';
 import States from './states';

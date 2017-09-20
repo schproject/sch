@@ -2,11 +2,11 @@
  * @flow
  */
 
+import type { Builder, PrimitiveArray, PrimitiveType, Process } from 'sch-common';
+
 import type { CommandOption } from '../command';
 
 import type { CommandSpec, GroupSpec, OptionSpec, ProgramSpec } from '../spec';
-
-import type { Builder, PrimitiveArray, PrimitiveType, Process } from '../types';
 
 export interface OptionSpecAndValue<T: PrimitiveType> {
     +spec:  OptionSpec<T>;

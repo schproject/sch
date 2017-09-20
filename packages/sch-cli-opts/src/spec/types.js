@@ -2,7 +2,7 @@
  * @flow
  */
 
-import { Process } from '../types';
+import { Process } from 'sch-common';
 
 export interface CommandSpec {
     +args: Array<NamedOptionSpec<*>>;

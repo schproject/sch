@@ -2,9 +2,7 @@
  * @flow
  */
 
-import { GroupSpec } from '../../spec';
-
-import { CommandGroup } from '../types';
+import { CommandGroup, GroupSpec } from 'sch-cli-opts';
 
 import init from './init';
 

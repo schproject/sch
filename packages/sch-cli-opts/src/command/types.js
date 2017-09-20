@@ -3,7 +3,7 @@
  */
 
 import type { CommandSpec } from '../spec';
-import type { PrimitiveType, PrimitiveArray, Process } from '../types';
+import type { PrimitiveType, PrimitiveArray, Process } from 'sch-common';
 
 export interface Command {
     run (process: Process): void;

@@ -2,14 +2,9 @@
  * @flow
  */
 
-import type { Command } from '../types';
-
-import type { Process } from '../../types';
-
-import {
-    CommandSpec,
-    specBuilder
-} from '../../spec';
+import type { Command, CommandSpec } from 'sch-cli-opts';
+import type { Process } from 'sch-common';
+import { specBuilder } from 'sch-cli-opts';
 
 export const command: Command = {
     run (process: Process) {}

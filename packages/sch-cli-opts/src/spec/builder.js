@@ -2,17 +2,12 @@
  * @flow
  */
 
+import type { PrimitiveType, Process } from 'sch-common';
+
 import { IllegalStateError } from '../errors';
 
-import type {
-    CommandSpec,
-    GroupSpec,
-    OptionSpec,
-    NamedOptionSpec,
-    ProgramSpec
-} from './types';
-
-import type { PrimitiveType, Process } from '../types';
+import type { CommandSpec, GroupSpec, OptionSpec,
+    NamedOptionSpec, ProgramSpec } from './types';
 
 class CommandSpecBuilder {
     _args: Array<NamedOptionSpec<*>>;
