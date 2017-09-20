@@ -4,12 +4,7 @@
 
 import type { CommandOption } from '../command';
 
-import type {
-    CommandSpec,
-    GroupSpec,
-    OptionSpec,
-    ProgramSpec
-} from '../spec';
+import type { CommandSpec, GroupSpec, OptionSpec, ProgramSpec } from '../spec';
 
 import type { Builder, PrimitiveArray, PrimitiveType, Process } from '../types';
 
@@ -19,7 +14,7 @@ export interface OptionSpecAndValue<T: PrimitiveType> {
 }
 
 export interface Parser {
-    +parse: (void) => void;
+    +parse: (void) => ParserResult;
 }
 
 export interface ParserContext {
@@ -46,7 +41,7 @@ export interface ParserReporter {
     +command: (commandSpec: CommandSpec) => ParserReporter;
     +error: (error: ParserError) => ParserReporter;
     +flag: (name: string, flag: OptionSpec<*>) => ParserReporter;
-    +flag: (name: string, flag: OptionSpecAndValue<*>) => ParserReporter;
+    +flagValue: (name: string, value: PrimitiveType) => ParserReporter;
     +group: (name: string, group: GroupSpec) => ParserReporter;
     +result: (void) => ParserResult;
 }
