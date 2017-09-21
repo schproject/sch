@@ -4,8 +4,6 @@
 
 import type { Builder, PrimitiveArray, PrimitiveType, Process } from 'sch-common';
 
-import type { CommandOption } from '../command';
-
 import type { CommandSpec, GroupSpec, OptionSpec, ProgramSpec } from '../spec';
 
 export interface OptionSpecAndValue<T: PrimitiveType> {
