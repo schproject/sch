@@ -7,6 +7,6 @@ export type { Parser, ParserError, ParserResult } from './parse';
 export { createParser } from './parse';
 export { Registry, RegistryBuilder } from './registry';
 export { registryBuilder } from './registry';
-export type { CommandSpec, GroupSpec, OptionSpec,
-    NamedGroupSpec, NamedOptionSpec, ProgramSpec } from './spec';
-export { findCommandSpec, findGroupSpec, specBuilder } from './spec';
+export type { CommandSpec, OptionSpec,
+    NamedOptionSpec, ProgramSpec } from './spec';
+export { specBuilder } from './spec';

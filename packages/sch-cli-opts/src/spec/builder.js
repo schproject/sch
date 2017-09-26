@@ -6,8 +6,13 @@ import type { PrimitiveType, Process } from 'sch-common';
 
 import { IllegalStateError } from '../errors';
 
-import type { CommandSpec, GroupSpec, OptionSpec,
+import { Registry, RegistryBuilder, registryBuilder } from '../registry';
+
+import type { CommandSpec, OptionSpec, OptionType,
     NamedOptionSpec, ProgramSpec } from './types';
+
+import { StandardCommandSpec, StandardOptionSpec,
+    StandardNamedOptionSpec, } from './standard';
 
 class CommandSpecBuilder {
     _args: Array<NamedOptionSpec<*>>;
@@ -18,66 +23,21 @@ class CommandSpecBuilder {
         this._flags = new Map();
     }
 
-    arg (name: string, { defaultValue, multiple, optional, sample }: OptionSpec<*>): CommandSpecBuilder {
-        this._args.push({
-            defaultValue,
-            multiple,
-            name,
-            optional,
-            sample
-        });
+    arg (name: string, optionSpec: OptionSpec<*>): CommandSpecBuilder {
+        this._args.push(new StandardNamedOptionSpec(name, optionSpec));
         return this;
     }
 
     build (): CommandSpec {
-        const commandSpec: CommandSpec = {
-            args: this._args.slice(),
-            flags: Array.from(this._flags).reduce((obj, [key, value]) => {
+        return new StandardCommandSpec(this._args.slice(),
+            Array.from(this._flags).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
-            }, {})
-        };
-
-        return commandSpec;
+            }, {}));
     }
 
     flag (name: string, option: OptionSpec<*>): CommandSpecBuilder {
         this._flags.set(name, option);
-        return this;
-    }
-}
-
-class GroupSpecBuilder {
-    _commands: Map<string, CommandSpec>;
-    _groups: Map<string, GroupSpec>;
-
-    constructor () {
-        this._commands = new Map();
-        this._groups = new Map();
-    }
-
-    build (): GroupSpec {
-        const groupSpec: GroupSpec = {
-            commands: Array.from(this._commands).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}),
-            groups: Array.from(this._groups).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {})
-        };
-
-        return groupSpec;
-    }
-
-    command (name: string, command: CommandSpec): GroupSpecBuilder {
-        this._commands.set(name, command);
-        return this;
-    }
-
-    group (name: string, group: GroupSpec): GroupSpecBuilder {
-        this._groups.set(name, group);
         return this;
     }
 }
@@ -93,14 +53,8 @@ class OptionSpecBuilder<T: PrimitiveType> {
     }
 
     build (): OptionSpec<T> {
-        const spec: OptionSpec<T> = {
-            defaultValue: this._defaultValue,
-            multiple: this._multiple,
-            optional: this._optional,
-            sample: this._sample,
-        }
-
-        return spec;
+        return new StandardOptionSpec(this._defaultValue,
+            this._multiple, this._optional, this._sample);
     }
 
     defaultValue (defaultValue: T | Process => T): OptionSpecBuilder<T> {
@@ -120,46 +74,36 @@ class OptionSpecBuilder<T: PrimitiveType> {
 }
 
 class ProgramSpecBuilder {
-    _commands: Map<string, CommandSpec>;
-    _groups: Map<string, GroupSpec>;
+    _registryBuilder: RegistryBuilder<CommandSpec>;
 
     constructor () {
-        this._commands = new Map();
-        this._groups = new Map();
+        this._registryBuilder = registryBuilder(StandardCommandSpec);
     }
 
     build (): ProgramSpec {
-        const programSpec: ProgramSpec = {
-            commands: Array.from(this._commands).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}),
-            groups: Array.from(this._groups).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-            }, {}),
-        };
-
-        return programSpec;
+        return this._registryBuilder.build();
     }
 
-    command (name: string, command: CommandSpec): ProgramSpecBuilder {
-        this._commands.set(name, command);
+    default (command: CommandSpec): ProgramSpecBuilder {
+        this._registryBuilder.default(command);
         return this;
     }
 
-    group (name: string, group: GroupSpec): ProgramSpecBuilder {
-        this._groups.set(name, group);
+    command (name: string, command: CommandSpec): ProgramSpecBuilder {
+        this._registryBuilder.entry(name, command);
+        return this;
+    }
+
+    group (name: string, group: Registry<CommandSpec>): ProgramSpecBuilder {
+        this._registryBuilder.registry(name, group);
         return this;
     }
 }
 
+
 export default {
     command: function () {
         return new CommandSpecBuilder();
-    },
-    group: function () {
-        return new GroupSpecBuilder();
     },
     option: {
         boolean (): OptionSpecBuilder<boolean> {
@@ -173,6 +117,6 @@ export default {
         }
     },
     program: function () {
-        return new ProgramSpecBuilder();
+        registryBuilder(StandardCommandSpec);
     }
 }

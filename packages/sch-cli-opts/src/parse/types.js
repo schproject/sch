@@ -4,7 +4,7 @@
 
 import type { Builder, PrimitiveArray, PrimitiveType, Process } from 'sch-common';
 
-import type { CommandSpec, GroupSpec, OptionSpec, ProgramSpec } from '../spec';
+import type { CommandSpec, OptionSpec, ProgramSpec } from '../spec';
 
 export interface OptionSpecAndValue<T: PrimitiveType> {
     +spec:  OptionSpec<T>;
@@ -40,8 +40,7 @@ export interface ParserReporter {
     +error: (error: ParserError) => ParserReporter;
     +flag: (name: string, flag: OptionSpec<*>) => ParserReporter;
     +flagValue: (name: string, value: PrimitiveType) => ParserReporter;
-    +group: (name: string, group: GroupSpec) => ParserReporter;
-    +result: (void) => ParserResult;
+    +group: (name: string) => ParserReporter;
 }
 
 export interface ParserResult {
@@ -51,7 +50,7 @@ export interface ParserResult {
     +error: (void) => ?ParserError;
     +flag: (name: string) => OptionSpecAndValue<*>;
     +flags: (void) => { [name: string]: OptionSpecAndValue<*> };
-    +groups: (void) => Array<[string, GroupSpec]>;
+    +groups: (void) => Array<string>;
 }
 
 export interface ParserResultFactory {

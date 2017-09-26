@@ -3,7 +3,12 @@
  */
 
 export interface Registry<T> {
-    +find: (...name: Array<string>) => ?T;
+    +getDefault: (void) => T;
+    +getEntry: (name: string) => T;
+    +getRegistry: (name: string) => Registry<T>;
+    +hasDefault: () => boolean;
+    +hasEntry: (name: string) => boolean;
+    +hasRegistry: (name: string) => boolean;
 }
 
 export interface RegistryBuilder<T> {

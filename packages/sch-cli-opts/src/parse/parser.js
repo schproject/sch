@@ -8,7 +8,7 @@ import type { PrimitiveType, PrimitiveArray } from 'sch-common';
 
 import { IllegalStateError } from '../errors';
 
-import type { CommandSpec, GroupSpec, ProgramSpec, OptionSpec } from '../spec';
+import type { CommandSpec, ProgramSpec, OptionSpec } from '../spec';
 
 import { StateNotFoundError } from './errors';
 import States from './states';
@@ -22,7 +22,7 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
     _command: ?CommandSpec;
     _error: ?ParserError;
     _flags: Map<string, OptionSpecAndValue<*>>;
-    _groups: Array<[string, GroupSpec]>;
+    _groups: Array<string>;
 
     constructor () {
         this._args = [];
@@ -112,12 +112,12 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
         return this;
     }
 
-    group (name: string, group: GroupSpec): ParserResultBuilder {
-        if (this._groups.find(tuple => tuple[0] == name)) {
+    group (name: string): ParserResultBuilder {
+        if (this._groups.find(name_ => name_ == name)) {
             throw new IllegalStateError('A group with this name has already been collected: ' + name);
         }
 
-        this._groups.push([name, group]);
+        this._groups.push(name);
 
         return this;
     }
@@ -159,13 +159,13 @@ export class StandardParserResult {
     _args: Array<[string, OptionSpecAndValue<*>]>;
     _command: ?CommandSpec;
     _error: ?ParserError;
-    _groups: Array<[string, GroupSpec]>;
+    _groups: Array<string>;
     _flags: { [name: string]: OptionSpecAndValue<*> };
 
     constructor (args: Array<[string, OptionSpecAndValue<*>]>,
             command: ?CommandSpec, error: ?ParserError,
             flags: { [name: string]: OptionSpecAndValue<*> },
-            groups: Array<[string, GroupSpec]>) {
+            groups: Array<string>) {
         this._args = args;
         this._command = command;
         this._error = error;
@@ -213,7 +213,7 @@ export class StandardParserResult {
         return this._flags;
     }
 
-    groups (): Array<[string, GroupSpec]> {
+    groups (): Array<string> {
         return this._groups;
     }
 }

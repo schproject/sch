@@ -6,13 +6,7 @@ import loglevel from 'loglevel';
 
 import { IllegalStateEntryError } from './errors';
 
-import type { CommandSpec, GroupSpec,
-    OptionSpec, ProgramSpec, } from '../spec';
-
-import typeof { CommandSpec as CommandSpecType,
-    GroupSpec as GroupSpecType } from '../spec';
-
-import { findCommandSpec, findGroupSpec } from '../spec';
+import type { CommandSpec, OptionSpec, ProgramSpec, } from '../spec';
 
 import type { ParserContext, ParserReporter,
     ParserResult, ParserState, ParserStateTransition } from './types';
@@ -67,23 +61,6 @@ export const ParseArg: ParserState = function (argIndex: number,
 export const ParseCommandOrGroupName: ParserState = function (argIndex: number,
         args: Array<string>, program: ProgramSpec, report: ParserReporter,
         result: ParserResult, transition: ParserStateTransition) {
-    const names = result.groups().map(group => group[0]),
-        groupSpec = findGroupSpec(program, names),
-        nextName = args[argIndex];
-
-    if (groupSpec == null) {
-        throw new IllegalStateEntryError('No group spec found');
-    }
-
-    if (groupSpec.commands[nextName]) {
-        report.command(groupSpec.commands[nextName]);
-        transition(argIndex + 1, ParseFlagOrArg);
-    } else if (groupSpec.groups[nextName]) {
-        report.group(nextName, groupSpec.groups[nextName]);
-        transition(argIndex + 1, ParseCommandOrGroupName);
-    } else {
-        transition(argIndex, InvalidName);
-    }
 }
 
 export const ParseFlag: ParserState = function (argIndex: number,
@@ -128,7 +105,8 @@ export const ParseFlagValue: ParserState = function (argIndex: number,
             transition(argIndex, InvalidFlagValue);
         }
     } else {
-        report.flagValue(name, (value: typeof spec.sample));
+        const sample = spec.sample();
+        report.flagValue(name, (value: typeof sample));
         transition(argIndex + 2, ParseFlagOrArg);
     }
 }

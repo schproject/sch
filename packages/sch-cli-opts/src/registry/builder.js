@@ -2,88 +2,88 @@
  * @flow
  */
 
+import { InvalidArgumentError, UnsupportedOperationError } from '../errors';
+
 import type { Registry, RegistryBuilder } from './types';
 
-class ArrayRegistry<T> implements Registry<T> {
-    _registries: Array<Registry<T>>;
-
-    constructor (registries: Array<Registry<T>>) {
-        this._registries = registries;
-    }
-
-    find (...names: Array<string>): ?T {
-        let idx;
-        for (idx = 0; idx < this._registries.length; idx++) {
-            const value = this._registries[idx].find(...names);
-            if (value != null) {
-                return value;
-            }
-        }
-        return null;
-    }
-}
-
-class DefaultEntryRegistry<T> implements Registry<T> {
-    _entry: T;
-
-    constructor (entry: T) {
-        this._entry = entry;
-    }
-
-    find (...names: Array<string>): ?T {
-        if (names.length == 0) {
-            return this._entry;
-        } else {
-            return null;
-        }
-    }
-}
-
-class MapRegistry<T> implements Registry<T> {
+class StandardRegistry<T> implements Registry<T> {
+    _defaultEntry: ?T;
+    _entries: { [name: string]: T };
     _registries: { [name: string]: Registry<T> };
 
-    constructor (registries: { [name: string]: Registry<T> }) {
+    constructor (defaultEntry: ?T, entries: { [name: string]: T },
+            registries: { [name: string]: Registry<T> }) {
+        this._defaultEntry = defaultEntry;
+        this._entries = entries;
         this._registries = registries;
     }
 
-    find (...names: Array<string>): ?T {
-        const [ firstName, ...lastNames ] = names;
-
-        if (firstName && this._registries[firstName]) {
-            return this._registries[firstName].find(...lastNames);
+    getDefault (): T {
+        if (this._defaultEntry == null) {
+            throw new InvalidArgumentError('This entries does not have a default');
         } else {
-            return null;
+            return this._defaultEntry;
         }
+    }
+
+    getEntry (name: string): T {
+        throw new UnsupportedOperationError('This entry does not contain an entry named: ' + name);
+        //if (!this._entries[name] || this._entries[name] == null) {
+        //} else {
+        //    return this._entries[name];
+        //}
+    }
+
+    getRegistry (name: string): Registry<T> {
+        throw new UnsupportedOperationError('This entry does not contain a registry named: ' + name);
+        //if (!this._entries[name]) {
+        //} else {
+        //    return this._registries[name];
+        //}
+    }
+
+    hasDefault (): boolean {
+        return !!this._defaultEntry;
+    }
+
+    hasEntry (name: string): boolean {
+        return !!this._entries[name];
+    }
+
+    hasRegistry (name: string): boolean {
+        return !!this._registries[name];
     }
 }
 
 class StandardRegistryBuilder<T> implements RegistryBuilder<T> {
-    _default: ?DefaultEntryRegistry<T>;
+    _defaultEntry: ?T;
+    _entries: Map<string, T>;
     _registries: Map<string, Registry<T>>;
 
     constructor (cls: Class<T>) {
+        this._entries = new Map();
         this._registries = new Map();
     }
 
     build (): Registry<T> {
-        const registries = [];
-
-        if (this._default != null) {
-            registries.push(this._default);
-        }
-
-        registries.push(new MapRegistry(this._registries));
-
-        return new ArrayRegistry(registries);
+        return new StandardRegistry(this._defaultEntry,
+            Array.from(this._entries).reduce((obj, [k, v]) => {
+                obj[k] = v;
+                return obj;
+            }, {}),
+            Array.from(this._registries).reduce((obj, [k, v]) => {
+                obj[k] = v;
+                return obj;
+            }, {}));
     }
 
     default (value: T): RegistryBuilder<T> {
-        this._default = new DefaultEntryRegistry(value);;
+        this._defaultEntry = value;
         return this;
     }
 
     entry (name: string, value: T): RegistryBuilder<T> {
-        this._registries.set(name, new DefaultEntryRegistry(value));
+        this._entries.set(name, value);
         return this;
     }
 
