@@ -1,0 +1,4 @@
+2017-12-02
+ - [ ] Make parser result accept multiple errors
+ - [ ] Make validation a parser state
+ - [ ] Make transitions check for args length vs. arg index
