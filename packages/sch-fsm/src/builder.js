@@ -3,20 +3,19 @@
  */
 
 import type { Machine, MachineBuilder,
-    State, StateFactory,
+    State, StateBuilder,
     StateId, StateIdRegistry } from './types';
 
 class StandardMachineBuilder<T> implements MachineBuilder<T> {
     _contextClass: Class<T>;
     _states: Map<StateId, State<T>>;
-    _stateIds: StateIdRegistry;
-    _stateIdReferences: StateIdRegistry;
+    _stateIdRefs: StateIdRegistry;
 
-    constructor (contextClass: Class<T>) {
+    constructor (contextClass: Class<T>,
+            stateIdRefs: StateIdRegistry = new MutableStateIdRegistry()) {
         this._contextClass = contextClass;
         this._states = new Map();
-        this._stateIds = new StandardStateIdRegistry();
-        this._stateIdReferences = new StandardStateIdRegistry();
+        this._stateIdRefs = stateIdRefs;
     }
 
     build (): Machine<T> {
@@ -25,19 +24,110 @@ class StandardMachineBuilder<T> implements MachineBuilder<T> {
         }
     }
 
-    state (name: string, createState: StateFactory<T>): MachineBuilder<T> {
-        if (this._stateIds.has(name)) {
-            throw new Error('There is already a state with name: ' + name);
+    state (state: State<T>): MachineBuilder<T> {
+        if (this._states.has(state.id())) {
+            throw new Error('There is already a state with id: ' + state.id().name());
         }
 
-        const stateId = this._stateIds.get(name);
-        this._states.set(stateId, createState(this._stateIdReferences));
+        this._states.set(state.id(), state);
 
         return this;
     }
 }
 
-class StandardStateIdRegistry implements StateIdRegistry {
+class StandardState<T> implements State<T> {
+    _id: StateId;
+    _onEnter: T => StateId;
+    _to: StateIdRegistry;
+
+    constructor (id: StateId, onEnter: T => StateId, to: StateIdRegistry) {
+        this._id = id;
+        this._onEnter = onEnter;
+        this._to = to;
+    }
+
+    enter (context: T): StateId {
+        const stateId = this._onEnter(context);
+
+        return stateId;
+    }
+
+    id (): StateId {
+        return this._id;
+    }
+
+    to (): StateIdRegistry {
+        return this._to;
+    }
+}
+
+class StandardStateBuilder<T> implements StateBuilder<T> {
+    _contextClass: Class<T>;
+    _id: StateId;
+    _onEnter: T => StateId;
+    _to: StateIdRegistry;
+
+    constructor (contextClass: Class<T>) {
+        this._contextClass = contextClass;
+        this._to = new MutableStateIdRegistry();
+    }
+
+    build (): State<T> {
+        return new StandardState(this._id, this._onEnter,
+            new ImmutableStateIdRegistry(this._to));
+    }
+
+    id (id: StateId): StateBuilder<T> {
+        this._id = id;
+        return this;
+    }
+
+    onEnter (onEnter: T => StateId): StateBuilder<T> {
+        this._onEnter = onEnter;
+
+        return this;
+    }
+
+    to (...ids: Array<StateId>): StateBuilder<T> {
+        let i;
+        for (i = 0; i < ids.length; i++)
+            this._to.get(ids[i].name());
+        return this;
+    }
+}
+
+class StandardStateId implements StateId {
+    _name: string;
+
+    constructor (name: string) {
+        this._name = name;
+    }
+
+    name (): string {
+        return this._name;
+    }
+}
+
+class ImmutableStateIdRegistry implements StateIdRegistry {
+    _innerRegistry: StateIdRegistry;
+
+    constructor (innerRegistry: StateIdRegistry) {
+        this._innerRegistry = innerRegistry;
+    }
+
+    get (name: string): StateId {
+        if (!this._innerRegistry.has(name))
+            throw new Error('No id found with name: ' + name);
+
+        return this._innerRegistry.get(name);
+    }
+
+    has (name: string): boolean {
+        return this._innerRegistry.has(name);
+    }
+}
+
+class MutableStateIdRegistry implements StateIdRegistry {
     _stateIds: Map<string, StateId>;
 
     constructor () {
@@ -58,18 +148,6 @@ class StandardStateIdRegistry implements StateIdRegistry {
 
     has (name: string): boolean {
         return this._stateIds.has(name);
-    }
-}
-
-class StandardStateId implements StateId {
-    _name: string;
-
-    constructor (name: string) {
-        this._name = name;
-    }
-
-    name (): string {
-        return this._name;
     }
 }
 
