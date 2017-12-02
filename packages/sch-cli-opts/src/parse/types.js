@@ -47,7 +47,7 @@ export interface ParserResult {
     +arg: (name: string) => OptionSpecAndValue<*>;
     +args: (void) => Array<[string, OptionSpecAndValue<*>]>;
     +command: () => CommandSpec;
-    +error: (void) => ?ParserError;
+    +errors: (void) => Array<ParserError>;
     +flag: (name: string) => OptionSpecAndValue<*>;
     +flags: (void) => { [name: string]: OptionSpecAndValue<*> };
     +groups: (void) => Array<string>;

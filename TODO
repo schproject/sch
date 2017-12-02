@@ -1,4 +1,5 @@
 2017-12-02
- - [ ] Make parser result accept multiple errors
- - [ ] Make validation a parser state
- - [ ] Make transitions check for args length vs. arg index
+ - [ ] sch-cli-opts: Make parser result accept multiple errors
+ - [ ] sch-cli-opts: Make validation a parser state
+ - [ ] sch-cli-opts: Make transitions check for args length vs. arg index
+ - [ ] sch-fsm: Finish fleshing out state machine builder

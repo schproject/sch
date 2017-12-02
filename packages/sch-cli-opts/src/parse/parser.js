@@ -20,12 +20,13 @@ import type { OptionSpecAndValue, Parser, ParserContext,
 export class StandardParserResultBuilder implements ParserResultBuilder {
     _args: Array<[string, OptionSpecAndValue<*>]>;
     _command: ?CommandSpec;
-    _error: ?ParserError;
+    _errors: Array<ParserError>;
     _flags: Map<string, OptionSpecAndValue<*>>;
     _groups: Array<string>;
 
     constructor () {
         this._args = [];
+        this._errors = [];
         this._flags = new Map();
         this._groups = [];
     }
@@ -34,7 +35,8 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
         return new StandardParserResult(
             this._args.slice(),
             this._command,
-            this._error,
+            this._errors,
+
             Array.from(this._flags).reduce((obj, [key, value]) => {
                 obj[key] = value;
                 return obj;
@@ -63,11 +65,7 @@ export class StandardParserResultBuilder implements ParserResultBuilder {
     }
 
     error (error: ParserError): ParserResultBuilder {
-        if (this._error) {
-            throw new IllegalStateError('A parser error has already been collected');
-        }
-
-        this._error = error;
+        this._errors.push(error);
 
         return this;
     }
@@ -158,17 +156,17 @@ export class StandardParser implements Parser {
 export class StandardParserResult {
     _args: Array<[string, OptionSpecAndValue<*>]>;
     _command: ?CommandSpec;
-    _error: ?ParserError;
+    _errors: Array<ParserError>;
     _groups: Array<string>;
     _flags: { [name: string]: OptionSpecAndValue<*> };
 
     constructor (args: Array<[string, OptionSpecAndValue<*>]>,
-            command: ?CommandSpec, error: ?ParserError,
+            command: ?CommandSpec, errors: Array<ParserError>,
             flags: { [name: string]: OptionSpecAndValue<*> },
             groups: Array<string>) {
         this._args = args;
         this._command = command;
-        this._error = error;
+        this._errors = errors;
         this._flags = flags;
         this._groups = groups;
     }
@@ -195,8 +193,8 @@ export class StandardParserResult {
         }
     }
 
-    error (): ?ParserError {
-        return this.error;
+    errors (): Array<ParserError> {
+        return this._errors;
     }
 
     flag (name: string): OptionSpecAndValue<*> {
