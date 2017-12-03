@@ -1,0 +1,39 @@
+interface StateId {
+  +name: (void) => string;
+}
+
+type StateFactory<T: $ReadOnlyArray<StateId>> = (T) => void;
+type StateFactoryInvoker<T: $ReadOnlyArray<StateId>>
+  = (StateFactory<T>) => void;
+
+interface StateBuilder<T: $ReadOnlyArray<StateId>> {
+  +onEnter: (StateFactory<T>) => void;
+}
+
+type StateBuilderFactory<T: $ReadOnlyArray<StateId>> =
+  (T) => StateBuilder<T>;
+
+const parseArgStateFactory: StateFactory<[StateId,StateId]> 
+  = ([a,b]) => {}
+
+const parseFlagStateFactory: StateFactory<[StateId, StateId, StateId]>
+  = ([a,b,c]) => {} 
+
+const s1: StateId =  {
+  name() { return 'a'; }
+}
+
+parseArgStateFactory([s1,s1]);
+parseFlagStateFactory([s1,s1,s1]);
+
+const makeStateBuilder: StateBuilderFactory<*>
+  = (x) => {
+  return {
+    onEnter(sf: StateFactory<*>) {
+    }
+  };
+}
+
+const sb = makeStateBuilder([s1, s1]);
+sb.onEnter(parseArgStateFactory);
+
