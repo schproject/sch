@@ -1,0 +1,4 @@
+2018-01-20
+ - [ ] Validate states ids when building a machine
+ - [ ] Implement Machine#run
+ - [ ] Test and create examples

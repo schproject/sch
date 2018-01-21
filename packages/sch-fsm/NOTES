@@ -37,3 +37,60 @@ const makeStateBuilder: StateBuilderFactory<*>
 const sb = makeStateBuilder([s1, s1]);
 sb.onEnter(parseArgStateFactory);
 
+=========================
+
+Want to be able to create a parser via a state machine, like so:
+
+parser = StateMachineBuilder.new()
+    .state(new ParseArgOrFlagState())
+    .state(new ParseFlagValueState())
+    .build();
+
+Each state needs to be able to set the next state. To do so, each state
+must be aware of state ids that it may transition to. One option is to
+hardcode state ids inside of states themselves. This is a bit annoying,
+because conceivably a state could be re-used in a single machine or
+across machines. It is not an option to inject dependency states into a
+state, because those dependencies may in turn depend on the state.
+
+parser = StateMachineBuilder.new()
+    .state(new ParseArgOrFlagState(parseArgId='parse-arg', parseFlagId='parse-flag'))
+    .state(new ParseFlagState(parseArgOrFlagId='parse-arg-or-flag'))
+    .build();
+
+The above approach is a bit annoying because flag ids might be re-used, and
+are difficult to verify. Something like the following could help ensure safety:
+
+parser = StateMachineBuilder.new()
+    .state('parse-flag-or-arg', (transition) => {
+        return new ParseFlagOrArgState(parseArgId=transition.to('parse-arg'), ...)
+    })
+    ...
+    .build();
+
+It would be nice to be able have a high-level way to inspect transitions,
+in addition to states. This can be implicitly calculated from `transition`
+objects scoped to a given state-under-construction.
+
+An alternative to above would decouple machine from state construction.
+
+parser = StateMachineBuilder.new()
+    .state(StateBuilder.new()
+        .id('parse-flag-or-arg')
+        .onEnter(stateIdRegistry => {
+            return createParseFlagOrArgState({
+                stateIds: {
+                    parseFlag: stateIdRegistry.ref('parse-flag'),
+                    parseArg: stateIdRegistry.ref('parse-arg')
+                }
+            });
+        })
+        .build())
+    ...
+    .build();
+
+We also need a way to configure the initial state. We could do this by
+
+ - Having an optional boolean flag in the `state()` method of the machine
+   builder
+ - Having an `initial()` method on the state builder.

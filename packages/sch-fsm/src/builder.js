@@ -2,32 +2,71 @@
  * @flow
  */
 
+import Checks from './checks';
+import { IllegalStateError } from './errors';
+
 import type { Machine, MachineBuilder,
-    State, StateBuilder,
-    StateId, StateIdRegistry } from './types';
+    State, StateBuilder, StateId, StateIdRegistry,
+    Transition, TransitionFactory } from './types';
+
+class ReferenceTrackingStateIdRegistry implements StateIdRegistry {
+    _references: Set<StateId>;
+    
+    constructor () {
+        this._references = new Set();
+    }
+
+    get (name: string): StateId {
+        if (!this._references.has(name)) {
+            this._references.add(name);
+        }
+
+        return name;
+    }
+
+    getReferences (): Iterator<StateId> {
+        return this._references.values();
+    }
+}
+
+class StandardMachine<T> implements Machine<T> {
+    _contextClass: Class<T>;
+    _initialState: State<T>;
+    _states: Iterator<State<T>>;
+
+    constructor (contextClass: Class<T>, initialState: State<T>,
+        states: Iterator<State<T>>) {
+        this._contextClass = contextClass;
+        this._initialState = initialState;
+        this._states = states;
+    }
+
+    run (context: T) {
+    }
+}
 
 class StandardMachineBuilder<T> implements MachineBuilder<T> {
     _contextClass: Class<T>;
+    _initialState: ?State<T>;
     _states: Map<StateId, State<T>>;
-    _stateIdRefs: StateIdRegistry;
 
-    constructor (contextClass: Class<T>,
-            stateIdRefs: StateIdRegistry = new MutableStateIdRegistry()) {
+    constructor (contextClass: Class<T>) {
         this._contextClass = contextClass;
+        this._initialState = null;
         this._states = new Map();
-        this._stateIdRefs = stateIdRefs;
     }
 
     build (): Machine<T> {
-        return { 
-            run() {}
-        }
+        if (!this._initialState)
+            return new IllegalStateError('Cannot build a machine without an initial state');
+
+        return new StandardMachine(this._contextClass,
+            this._initialState, this._states.values());
     }
 
     state (state: State<T>): MachineBuilder<T> {
-        if (this._states.has(state.id())) {
-            throw new Error('There is already a state with id: ' + state.id().name());
-        }
+        Checks.duplicateStateId(this._states.keys(), state.id());
+        Checks.singleInitialState(this._initialState, state.initial());
 
         this._states.set(state.id(), state);
 
@@ -37,131 +76,80 @@ class StandardMachineBuilder<T> implements MachineBuilder<T> {
 
 class StandardState<T> implements State<T> {
     _id: StateId;
-    _onEnter: T => StateId;
-    _to: StateIdRegistry;
+    _initial: boolean;
+    _transition: Transition<T>;
+    _transitionsTo: $ReadOnlyArray<StateId>;
 
-    constructor (id: StateId, onEnter: T => StateId, to: StateIdRegistry) {
+    constructor (id: StateId, initial: boolean,
+        transition: Transition<T>, transitionsTo: $ReadOnlyArray<StateId>) {
         this._id = id;
-        this._onEnter = onEnter;
-        this._to = to;
-    }
-
-    enter (context: T): StateId {
-        const stateId = this._onEnter(context);
-
-        return stateId;
+        this._initial = initial;
+        this._transition = transition;
+        this._transitionsTo = transitionsTo;
     }
 
     id (): StateId {
         return this._id;
     }
 
-    to (): StateIdRegistry {
-        return this._to;
+    initial (): boolean {
+        return this._initial;
+    }
+
+    transition (): Transition<T> {
+        return this._transition;
+    }
+
+    transitionsTo (): $ReadOnlyArray<StateId> {
+        return this._transitionsTo;
     }
 }
 
 class StandardStateBuilder<T> implements StateBuilder<T> {
     _contextClass: Class<T>;
-    _id: StateId;
-    _onEnter: T => StateId;
-    _to: StateIdRegistry;
+    _id: ?StateId;
+    _initial: boolean;
+    _transition: ?Transition<T>;
+    _transitionsTo: Array<StateId>;
 
     constructor (contextClass: Class<T>) {
         this._contextClass = contextClass;
-        this._to = new MutableStateIdRegistry();
+        this._transitionsTo = [];
     }
 
     build (): State<T> {
-        return new StandardState(this._id, this._onEnter,
-            new ImmutableStateIdRegistry(this._to));
+        if (!this._id)
+            throw new IllegalStateError('Cannot build a state without an id');
+        if (!this._transition)
+            throw new IllegalStateError('Cannot build a state without a transition');
+
+        return new StandardState(this._id, this._initial,
+            this._transition, this._transitionsTo);
     }
 
     id (id: StateId): StateBuilder<T> {
         this._id = id;
-        return this;
-    }
-
-    onEnter (onEnter: T => StateId): StateBuilder<T> {
-        this._onEnter = onEnter;
 
         return this;
     }
 
-    to (...ids: Array<StateId>): StateBuilder<T> {
-        let i;
-        for (i = 0; i < ids.length; i++)
-            this._to.get(ids[i].name());
+    initial (): StateBuilder<T> {
+        this._initial = true;
+
+        return this;
+    }
+
+    transition (transitionFactory: TransitionFactory<T>): StateBuilder<T> {
+        if (this._transition)
+            throw new IllegalStateError('State builder transition is already set');
+
+        const stateIdReferences = new ReferenceTrackingStateIdRegistry();
+
+        this._transition = transitionFactory(stateIdReferences);
+
+        for (let stateId: StateId of stateIdReferences.getReferences())
+            this._transitionsTo.push(stateId);
+
         return this;
     }
 }
-
-class StandardStateId implements StateId {
-    _name: string;
-
-    constructor (name: string) {
-        this._name = name;
-    }
-
-    name (): string {
-        return this._name;
-    }
-}
-
-class ImmutableStateIdRegistry implements StateIdRegistry {
-    _innerRegistry: StateIdRegistry;
-
-    constructor (innerRegistry: StateIdRegistry) {
-        this._innerRegistry = innerRegistry;
-    }
-
-    get (name: string): StateId {
-        if (!this._innerRegistry.has(name))
-            throw new Error('No id found with name: ' + name);
-
-        return this._innerRegistry.get(name);
-    }
-
-    has (name: string): boolean {
-        return this._innerRegistry.has(name);
-    }
-}
-
-class MutableStateIdRegistry implements StateIdRegistry {
-    _stateIds: Map<string, StateId>;
-
-    constructor () {
-        this._stateIds = new Map();
-    }
-
-    get (name: string): StateId {
-        let stateId = this._stateIds.get(name);
-
-        if (!stateId) {
-            stateId = new StandardStateId(name);
-        }
-
-        this._stateIds.set(name, stateId);
-
-        return stateId;
-    }
-
-    has (name: string): boolean {
-        return this._stateIds.has(name);
-    }
-}
-
-interface ExampleContext {
-    result(void): void;
-}
-
-class StandardExampleContext implements ExampleContext {
-    result () {
-    }
-}
-
-
-const x: ExampleContext = new StandardExampleContext();
-const mb: MachineBuilder<ExampleContext> = new StandardMachineBuilder(StandardExampleContext);
-const m: Machine<ExampleContext> = mb.build();
-m.run(x);
