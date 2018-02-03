@@ -20,7 +20,7 @@ export function notNull (value: any, error: Error) {
     if (!value) throw error;
 }
 
-export function singleInitialState (state?: State<?>, initial: boolean) {
+export function singleInitialState<T> (state?: State<T>, initial: boolean) {
     if (state && initial) {
         throw new MultipleInitialStatesError(
             'There is already an initial state with id: '

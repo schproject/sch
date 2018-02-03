@@ -4,84 +4,21 @@
 
 import Checks from './checks';
 import { IllegalStateError } from './errors';
+import { ReferenceTrackingStateIdRegistry } from './util';
 
-import type { Machine, MachineBuilder,
-    State, StateBuilder, StateId, StateIdRegistry,
+import type { State, StateBuilder, StateId, StateIdRegistry,
     Transition, TransitionFactory } from './types';
 
-class ReferenceTrackingStateIdRegistry implements StateIdRegistry {
-    _references: Set<StateId>;
-    
-    constructor () {
-        this._references = new Set();
-    }
-
-    get (name: string): StateId {
-        if (!this._references.has(name)) {
-            this._references.add(name);
-        }
-
-        return name;
-    }
-
-    getReferences (): Iterator<StateId> {
-        return this._references.values();
-    }
-}
-
-class StandardMachine<T> implements Machine<T> {
+export class StandardState<T> implements State<T> {
     _contextClass: Class<T>;
-    _initialState: State<T>;
-    _states: Iterator<State<T>>;
-
-    constructor (contextClass: Class<T>, initialState: State<T>,
-        states: Iterator<State<T>>) {
-        this._contextClass = contextClass;
-        this._initialState = initialState;
-        this._states = states;
-    }
-
-    run (context: T) {
-    }
-}
-
-class StandardMachineBuilder<T> implements MachineBuilder<T> {
-    _contextClass: Class<T>;
-    _initialState: ?State<T>;
-    _states: Map<StateId, State<T>>;
-
-    constructor (contextClass: Class<T>) {
-        this._contextClass = contextClass;
-        this._initialState = null;
-        this._states = new Map();
-    }
-
-    build (): Machine<T> {
-        if (!this._initialState)
-            return new IllegalStateError('Cannot build a machine without an initial state');
-
-        return new StandardMachine(this._contextClass,
-            this._initialState, this._states.values());
-    }
-
-    state (state: State<T>): MachineBuilder<T> {
-        Checks.duplicateStateId(this._states.keys(), state.id());
-        Checks.singleInitialState(this._initialState, state.initial());
-
-        this._states.set(state.id(), state);
-
-        return this;
-    }
-}
-
-class StandardState<T> implements State<T> {
     _id: StateId;
     _initial: boolean;
     _transition: Transition<T>;
     _transitionsTo: $ReadOnlyArray<StateId>;
 
-    constructor (id: StateId, initial: boolean,
+    constructor (contextClass: Class<T>, id: StateId, initial: boolean,
         transition: Transition<T>, transitionsTo: $ReadOnlyArray<StateId>) {
+        this._contextClass = contextClass;
         this._id = id;
         this._initial = initial;
         this._transition = transition;
@@ -105,7 +42,7 @@ class StandardState<T> implements State<T> {
     }
 }
 
-class StandardStateBuilder<T> implements StateBuilder<T> {
+export class StandardStateBuilder<T> implements StateBuilder<T> {
     _contextClass: Class<T>;
     _id: ?StateId;
     _initial: boolean;
@@ -123,7 +60,7 @@ class StandardStateBuilder<T> implements StateBuilder<T> {
         if (!this._transition)
             throw new IllegalStateError('Cannot build a state without a transition');
 
-        return new StandardState(this._id, this._initial,
+        return new StandardState(this._contextClass, this._id, this._initial,
             this._transition, this._transitionsTo);
     }
 
