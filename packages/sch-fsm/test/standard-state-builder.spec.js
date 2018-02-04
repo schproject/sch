@@ -4,6 +4,7 @@
 
 import { expect } from 'chai';
 
+import { IllegalStateError } from '../src/errors';
 import type { StateBuilder, StateIdRegistry } from '../src/types';
 import { StandardStateBuilder } from '../src/state';
 import { TestContext, TestTransition } from './util';
@@ -22,6 +23,16 @@ describe('StandardStateBuilder', function () {
     });
 
     describe('#build', function () {
+        context('when no id has been supplied', function() {
+            beforeEach(function() {
+                stateBuilder.transition(transitionFactory);
+            });
+
+            it('throws an IllegalStateError', function() {
+                expect(() => stateBuilder.build())
+                    .to.throw(IllegalStateError, 'Cannot build a state without an id');
+            });
+        });
     });
 
     describe('#id', function () {
