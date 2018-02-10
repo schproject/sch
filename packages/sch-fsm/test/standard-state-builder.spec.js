@@ -9,7 +9,7 @@ import { IllegalStateError } from '../src/errors';
 import type { State, StateBuilder, StateId, StateIdRegistry,
     Transition, TransitionFactory } from '../src/types';
 import { StandardState, StandardStateBuilder } from '../src/state';
-import { TestContext, TestTransition } from './util';
+import { TestContext } from './util';
 
 describe('StandardStateBuilder', function () {
     let contextClass: Class<TestContext> = TestContext,

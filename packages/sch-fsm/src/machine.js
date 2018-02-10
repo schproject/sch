@@ -8,7 +8,7 @@ import { IllegalStateError } from './errors';
 import type { Machine, MachineBuilder,
     State, StateId } from './types';
 
-class StandardMachine<T> implements Machine<T> {
+export class StandardMachine<T> implements Machine<T> {
     _contextClass: Class<T>;
     _initialState: State<T>;
     _states: Iterator<State<T>>;
@@ -24,7 +24,7 @@ class StandardMachine<T> implements Machine<T> {
     }
 }
 
-class StandardMachineBuilder<T> implements MachineBuilder<T> {
+export class StandardMachineBuilder<T> implements MachineBuilder<T> {
     _contextClass: Class<T>;
     _initialState: ?State<T>;
     _states: Map<StateId, State<T>>;
@@ -38,16 +38,16 @@ class StandardMachineBuilder<T> implements MachineBuilder<T> {
     build (): Machine<T> {
         if (!this._initialState)
             return new IllegalStateError('Cannot build a machine without an initial state');
-        const initialState = this._initialState;
+        const initialState = this._initialState,
+            states = this._states;
 
-        this._states.forEach((state: State<T>) => {
-            state.transitionsTo.forEach((stateId: StateId) => {
-                if (!this._states.has(stateId)) {
-                    throw new IllegalStateError(
-                        'State ' + state.id() + ' transitions to' + stateId
-                        + ', but no state with that id has been defined'
-                    );
-                }
+        states.forEach((state: State<T>) => {
+            state.transitionsTo().forEach((stateId: StateId) => {
+                if (states.has(stateId)) return;
+                throw new IllegalStateError(
+                    'State ' + state.id() + ' transitions to' + stateId
+                    + ', but no state with that id has been defined'
+                );
             });
         });
 
@@ -57,6 +57,10 @@ class StandardMachineBuilder<T> implements MachineBuilder<T> {
     state (state: State<T>): MachineBuilder<T> {
         Checks.duplicateStateId(this._states.keys(), state.id());
         Checks.singleInitialState(this._initialState, state.initial());
+
+        if(state.initial()) {
+            this._initialState = state;
+        }
 
         this._states.set(state.id(), state);
 
