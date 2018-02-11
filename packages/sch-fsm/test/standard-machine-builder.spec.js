@@ -5,7 +5,8 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 
-import { DuplicateStateIdError, MissingInitialStateError, MultipleInitialStatesError } from '../src/errors';
+import { DuplicateStateIdError, IllegalTransitionError,
+    MissingInitialStateError, MultipleInitialStatesError } from '../src/errors';
 import type { MachineBuilder, State, StateId } from '../src/types';
 import { StandardState } from '../src/state';
 import { StandardMachineBuilder } from '../src/machine';
@@ -35,6 +36,25 @@ describe('StandardMachineBuilder', function() {
             it('throws a MissingInitialStateError', function() {
                 expect(() => machineBuilder.build())
                     .to.throw(MissingInitialStateError);
+            });
+        });
+
+        context('when a state transitions to state id that identifies a unknown state', function() {
+            const stateId: StateId = 'some-state-id',
+                state: State<TestContext>
+                    = configure(sinon.createStubInstance(StandardState), function(stub) {
+                        stub.id.returns(stateId);
+                        stub.initial.returns(true);
+                        stub.transitionsTo.returns(['some-unknown-state-id']);
+                    });
+
+            beforeEach(function() {
+                machineBuilder.state(state);
+            });
+
+            it('throws an IllegalTransitionError', function() {
+                expect(() => machineBuilder.build())
+                    .to.throw(IllegalTransitionError);
             });
         });
     });

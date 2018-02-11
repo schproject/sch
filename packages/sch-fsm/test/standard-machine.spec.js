@@ -15,14 +15,7 @@ describe('StandardMachine', function() {
         initialState: State<TestContext>
             = sinon.createStubInstance(StandardState),
         machine: Machine<TestContext>,
-        stateSupplier = sinon.stub().returns({
-            done: true,
-            value: undefined
-        }),
-        states: Iterator<State<TestContext>> = {
-            '@@iterator': stateSupplier,
-            next: stateSupplier
-        };
+        states: $ReadOnlyArray<State<TestContext>> = [];
 
     beforeEach(function() {
         machine = new StandardMachine(contextClass, initialState, states);

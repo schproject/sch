@@ -1,3 +1,7 @@
+/**
+ * @flow
+ */
+
 import {
     DuplicateStateIdError,
     IllegalTransitionError,
@@ -8,7 +12,7 @@ import {
     TransitionAlreadyDefinedError
 } from './errors';
 
-import type { State } from './types';
+import type { State, StateId, Transition } from './types';
 
 export function duplicateStateId (stateIds: Set<StateId>, stateId: StateId): boolean {
     if(stateIds.has(stateId))
@@ -20,24 +24,24 @@ export function duplicateStateId (stateIds: Set<StateId>, stateId: StateId): boo
     return false;
 }
 
-export function hasInitialState(state?: State<T>): State<T> {
-    if (state == null)
+export function hasInitialState<T>(state: ?State<T>): State<T> {
+    if (!state)
         throw new MissingInitialStateError('Missing initial state');
     return state;
 }
 
-export function hasStateId (stateId?: StateId): StateId {
+export function hasStateId (stateId: ?StateId): StateId {
     if(!stateId) throw new MissingIdError('Missing required state id');
     return stateId;
 }
 
-export function hasTransition<T>(transition?: Transition<T>): Transition<T> {
+export function hasTransition<T>(transition: ?Transition<T>): Transition<T> {
     if(!transition) throw new MissingTransitionError('Missing required transition');
     return transition;
 }
 
 export function noIllegalTransitions<T>(states: $ReadOnlyArray<State<T>>, transitions: Set<StateId>) {
-    states.forEach((state: State<T>) => {
+    return states.map((state: State<T>) => {
         state.transitionsTo().forEach((transition: StateId) => {
             if (transitions.has(transition)) return;
             throw new IllegalTransitionError(
@@ -48,7 +52,7 @@ export function noIllegalTransitions<T>(states: $ReadOnlyArray<State<T>>, transi
     });
 }
 
-export function singleInitialState<T> (state?: State<T>, initial: boolean): boolean {
+export function singleInitialState<T> (state: ?State<T>, initial: boolean): boolean {
     if (state && initial) {
         throw new MultipleInitialStatesError(
             'There is already an initial state with id: '
@@ -58,7 +62,7 @@ export function singleInitialState<T> (state?: State<T>, initial: boolean): bool
     return true;
 }
 
-export function transitionNotSet<T>(transition?: Transition<T>) {
+export function transitionNotSet<T>(transition: ?Transition<T>) {
     if(transition)
         throw new TransitionAlreadyDefinedError('State builder transition is already set');
 }

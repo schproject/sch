@@ -11,10 +11,10 @@ import type { Machine, MachineBuilder,
 export class StandardMachine<T> implements Machine<T> {
     _contextClass: Class<T>;
     _initialState: State<T>;
-    _states: Iterator<State<T>>;
+    _states: $ReadOnlyArray<State<T>>;
 
     constructor (contextClass: Class<T>, initialState: State<T>,
-        states: Iterator<State<T>>) {
+        states: $ReadOnlyArray<State<T>>) {
         this._contextClass = contextClass;
         this._initialState = initialState;
         this._states = states;
@@ -27,21 +27,22 @@ export class StandardMachine<T> implements Machine<T> {
 export class StandardMachineBuilder<T> implements MachineBuilder<T> {
     _contextClass: Class<T>;
     _initialState: ?State<T>;
-    _stateIds: Set<StateId>;
     _states: Array<State<T>>;
+    _stateIds: Set<StateId>;
 
     constructor (contextClass: Class<T>) {
         this._contextClass = contextClass;
         this._initialState = null;
-        this._stateIds = new Set();
         this._states = [];
+        this._stateIds = new Set();
     }
 
     build (): Machine<T> {
-        const initialState: State<T> = Checks.hasInitialState(this._initialState),
-            states = Checks.noIllegalStates(this._states);
+        const initialState: State<T> = Checks.hasInitialState(this._initialState);
 
-        return new StandardMachine(this._contextClass, initialState, states);
+        Checks.noIllegalTransitions(this._states, this._stateIds);
+
+        return new StandardMachine(this._contextClass, initialState, this._states);
     }
 
     state (state: State<T>): MachineBuilder<T> {
