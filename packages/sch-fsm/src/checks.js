@@ -1,26 +1,51 @@
 import {
     DuplicateStateIdError,
-    MultipleInitialStatesError
+    IllegalTransitionError,
+    MissingIdError,
+    MissingInitialStateError,
+    MissingTransitionError,
+    MultipleInitialStatesError,
+    TransitionAlreadyDefinedError
 } from './errors';
 
 import type { State } from './types';
 
-export function duplicateStateId (stateIds: Iterable<StateId>, stateId: StateId): boolean {
-    for (let id: StateId of stateIds) {
-        if (id == stateId) {
-            throw new DuplicateStateIdError(
-                'There is already a state with id: '
-                + stateId
-            );
-        }
-    }
+export function duplicateStateId (stateIds: Set<StateId>, stateId: StateId): boolean {
+    if(stateIds.has(stateId))
+        throw new DuplicateStateIdError(
+            'There is already a state with id: '
+            + stateId
+        );
 
     return false;
 }
 
-export function notNull (value: any, error: Error): boolean {
-    if (!value) throw error;
-    return true;
+export function hasInitialState(state?: State<T>): State<T> {
+    if (state == null)
+        throw new MissingInitialStateError('Missing initial state');
+    return state;
+}
+
+export function hasStateId (stateId?: StateId): StateId {
+    if(!stateId) throw new MissingIdError('Missing required state id');
+    return stateId;
+}
+
+export function hasTransition<T>(transition?: Transition<T>): Transition<T> {
+    if(!transition) throw new MissingTransitionError('Missing required transition');
+    return transition;
+}
+
+export function noIllegalTransitions<T>(states: $ReadOnlyArray<State<T>>, transitions: Set<StateId>) {
+    states.forEach((state: State<T>) => {
+        state.transitionsTo().forEach((transition: StateId) => {
+            if (transitions.has(transition)) return;
+            throw new IllegalTransitionError(
+                'State ' + state.id() + ' transitions to' + transition
+                + ', but no state with that id has been defined'
+            );
+        });
+    });
 }
 
 export function singleInitialState<T> (state?: State<T>, initial: boolean): boolean {
@@ -33,8 +58,17 @@ export function singleInitialState<T> (state?: State<T>, initial: boolean): bool
     return true;
 }
 
+export function transitionNotSet<T>(transition?: Transition<T>) {
+    if(transition)
+        throw new TransitionAlreadyDefinedError('State builder transition is already set');
+}
+
 export default {
     duplicateStateId,
-    notNull,
-    singleInitialState
+    hasInitialState,
+    hasStateId,
+    hasTransition,
+    noIllegalTransitions,
+    singleInitialState,
+    transitionNotSet
 }

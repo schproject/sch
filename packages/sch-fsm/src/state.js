@@ -3,7 +3,6 @@
  */
 
 import Checks from './checks';
-import { IllegalStateError } from './errors';
 import { ReferenceTrackingStateIdRegistry } from './util';
 
 import type { State, StateBuilder, StateId, StateIdRegistry,
@@ -55,13 +54,11 @@ export class StandardStateBuilder<T> implements StateBuilder<T> {
     }
 
     build (): State<T> {
-        if (!this._id)
-            throw new IllegalStateError('Cannot build a state without an id');
-        if (!this._transition)
-            throw new IllegalStateError('Cannot build a state without a transition');
+        const id: StateId = Checks.hasStateId(this._id),
+            transition: Transition<T> = Checks.hasTransition(this._transition);
 
-        return new StandardState(this._contextClass, this._id, this._initial,
-            this._transition, this._transitionsTo);
+        return new StandardState(this._contextClass, id, this._initial,
+            transition, this._transitionsTo);
     }
 
     id (id: StateId): StateBuilder<T> {
@@ -77,8 +74,7 @@ export class StandardStateBuilder<T> implements StateBuilder<T> {
     }
 
     transition (transitionFactory: TransitionFactory<T>): StateBuilder<T> {
-        if (this._transition)
-            throw new IllegalStateError('State builder transition is already set');
+        Checks.transitionNotSet(this._transition);
 
         const stateIdReferences = new ReferenceTrackingStateIdRegistry();
 

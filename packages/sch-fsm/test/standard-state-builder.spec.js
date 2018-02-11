@@ -5,7 +5,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 
-import { IllegalStateError } from '../src/errors';
+import { MissingIdError, MissingTransitionError } from '../src/errors';
 import type { State, StateBuilder, StateId, StateIdRegistry,
     Transition, TransitionFactory } from '../src/types';
 import { StandardState, StandardStateBuilder } from '../src/state';
@@ -79,9 +79,8 @@ describe('StandardStateBuilder', function () {
                 stateBuilder.transition(transitionFactory);
             });
 
-            it('throws an IllegalStateError', function() {
-                expect(() => stateBuilder.build())
-                    .to.throw(IllegalStateError, 'Cannot build a state without an id');
+            it('throws an MissingIdError', function() {
+                expect(() => stateBuilder.build()).to.throw(MissingIdError);
             });
         });
 
@@ -90,9 +89,8 @@ describe('StandardStateBuilder', function () {
                 stateBuilder.id(stateId);
             });
 
-            it('throws an IllegalStateError', function() {
-                expect(() => stateBuilder.build())
-                    .to.throw(IllegalStateError, 'Cannot build a state without a transition');
+            it('throws an MissingTransitionError', function() {
+                expect(() => stateBuilder.build()).to.throw(MissingTransitionError);
             });
         });
     });

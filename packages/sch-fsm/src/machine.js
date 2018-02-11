@@ -27,42 +27,33 @@ export class StandardMachine<T> implements Machine<T> {
 export class StandardMachineBuilder<T> implements MachineBuilder<T> {
     _contextClass: Class<T>;
     _initialState: ?State<T>;
-    _states: Map<StateId, State<T>>;
+    _stateIds: Set<StateId>;
+    _states: Array<State<T>>;
 
     constructor (contextClass: Class<T>) {
         this._contextClass = contextClass;
         this._initialState = null;
-        this._states = new Map();
+        this._stateIds = new Set();
+        this._states = [];
     }
 
     build (): Machine<T> {
-        if (this._initialState == null)
-            throw new MissingInitialStateError('Cannot build a machine without an initial state');
-        const initialState = this._initialState,
-            states = this._states;
+        const initialState: State<T> = Checks.hasInitialState(this._initialState),
+            states = Checks.noIllegalStates(this._states);
 
-        states.forEach((state: State<T>) => {
-            state.transitionsTo().forEach((stateId: StateId) => {
-                if (states.has(stateId)) return;
-                throw new IllegalStateError(
-                    'State ' + state.id() + ' transitions to' + stateId
-                    + ', but no state with that id has been defined'
-                );
-            });
-        });
-
-        return new StandardMachine(this._contextClass, initialState, this._states.values());
+        return new StandardMachine(this._contextClass, initialState, states);
     }
 
     state (state: State<T>): MachineBuilder<T> {
-        Checks.duplicateStateId(this._states.keys(), state.id());
+        Checks.duplicateStateId(this._stateIds, state.id());
         Checks.singleInitialState(this._initialState, state.initial());
 
         if(state.initial()) {
             this._initialState = state;
         }
 
-        this._states.set(state.id(), state);
+        this._stateIds.add(state.id());
+        this._states.push(state);
 
         return this;
     }
