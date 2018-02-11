@@ -5,7 +5,7 @@ import {
 
 import type { State } from './types';
 
-export function duplicateStateId (stateIds: Iterable<StateId>, stateId: StateId) {
+export function duplicateStateId (stateIds: Iterable<StateId>, stateId: StateId): boolean {
     for (let id: StateId of stateIds) {
         if (id == stateId) {
             throw new DuplicateStateIdError(
@@ -14,19 +14,23 @@ export function duplicateStateId (stateIds: Iterable<StateId>, stateId: StateId)
             );
         }
     }
+
+    return false;
 }
 
-export function notNull (value: any, error: Error) {
+export function notNull (value: any, error: Error): boolean {
     if (!value) throw error;
+    return true;
 }
 
-export function singleInitialState<T> (state?: State<T>, initial: boolean) {
+export function singleInitialState<T> (state?: State<T>, initial: boolean): boolean {
     if (state && initial) {
         throw new MultipleInitialStatesError(
             'There is already an initial state with id: '
             + state.id()
         );
     }
+    return true;
 }
 
 export default {

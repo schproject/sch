@@ -3,7 +3,7 @@
  */
 
 import Checks from './checks';
-import { IllegalStateError } from './errors';
+import { IllegalStateError, MissingInitialStateError } from './errors';
 
 import type { Machine, MachineBuilder,
     State, StateId } from './types';
@@ -36,8 +36,8 @@ export class StandardMachineBuilder<T> implements MachineBuilder<T> {
     }
 
     build (): Machine<T> {
-        if (!this._initialState)
-            return new IllegalStateError('Cannot build a machine without an initial state');
+        if (this._initialState == null)
+            throw new MissingInitialStateError('Cannot build a machine without an initial state');
         const initialState = this._initialState,
             states = this._states;
 
