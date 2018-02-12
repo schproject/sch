@@ -4,15 +4,15 @@
 
 import {
     DuplicateStateIdError,
+    ExecutorAlreadyDefinedError,
     IllegalTransitionError,
     MissingIdError,
     MissingInitialStateError,
-    MissingTransitionError,
-    MultipleInitialStatesError,
-    TransitionAlreadyDefinedError
+    MissingExecutorError,
+    MultipleInitialStatesError
 } from './errors';
 
-import type { State, StateId, Transition } from './types';
+import type { Executor, State, StateId } from './types';
 
 export function duplicateStateId (stateIds: Set<StateId>, stateId: StateId): boolean {
     if(stateIds.has(stateId))
@@ -22,6 +22,11 @@ export function duplicateStateId (stateIds: Set<StateId>, stateId: StateId): boo
         );
 
     return false;
+}
+
+export function executorNotSet<T>(executor: ?Executor<T>) {
+    if(executor)
+        throw new ExecutorAlreadyDefinedError('State builder executor is already set');
 }
 
 export function hasInitialState<T>(state: ?State<T>): State<T> {
@@ -35,8 +40,8 @@ export function hasStateId (stateId: ?StateId): StateId {
     return stateId;
 }
 
-export function hasTransition<T>(transition: ?Transition<T>): Transition<T> {
-    if(!transition) throw new MissingTransitionError('Missing required transition');
+export function hasExecutor<T>(transition: ?Executor<T>): Executor<T> {
+    if(!transition) throw new MissingExecutorError('Missing required transition');
     return transition;
 }
 
@@ -62,17 +67,12 @@ export function singleInitialState<T> (state: ?State<T>, initial: boolean): bool
     return true;
 }
 
-export function transitionNotSet<T>(transition: ?Transition<T>) {
-    if(transition)
-        throw new TransitionAlreadyDefinedError('State builder transition is already set');
-}
-
 export default {
+    executorNotSet,
     duplicateStateId,
     hasInitialState,
     hasStateId,
-    hasTransition,
+    hasExecutor,
     noIllegalTransitions,
-    singleInitialState,
-    transitionNotSet
+    singleInitialState
 }

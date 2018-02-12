@@ -8,22 +8,22 @@ export interface StateIdRegistry {
     +get: string => StateId;
 }
 
-export type Transition<T> = T => StateId;
+export type Executor<T> = T => ?StateId;
 
-export type TransitionFactory<T> = StateIdRegistry => Transition<T>;
+export type ExecutorFactory<T> = StateIdRegistry => Executor<T>;
 
 export interface State<T> {
+    +executor: (void) => Executor<T>;
     +id: (void) => StateId;
     +initial: (void) => boolean;
-    +transition: (void) => Transition<T>;
     +transitionsTo: (void) => $ReadOnlyArray<StateId>;
 }
 
 export interface StateBuilder<T> {
     +build: (void) => State<T>;
+    +executor: (ExecutorFactory<T>) => StateBuilder<T>;
     +id: (StateId) => StateBuilder<T>;
     +initial: (void) => StateBuilder<T>;
-    +transition: (TransitionFactory<T>) => StateBuilder<T>;
 }
 
 export interface Machine<T> {

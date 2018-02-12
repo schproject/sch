@@ -3,7 +3,7 @@
  */
 
 import Checks from './checks';
-import { IllegalStateError, MissingInitialStateError } from './errors';
+import { MissingInitialStateError } from './errors';
 
 import type { Machine, MachineBuilder,
     State, StateId } from './types';

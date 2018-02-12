@@ -5,19 +5,18 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 
-import { MissingIdError, MissingTransitionError } from '../src/errors';
-import type { State, StateBuilder, StateId, StateIdRegistry,
-    Transition, TransitionFactory } from '../src/types';
+import { MissingExecutorError, MissingIdError } from '../src/errors';
+import type { Executor, ExecutorFactory, State, StateBuilder, StateId, StateIdRegistry } from '../src/types';
 import { StandardState, StandardStateBuilder } from '../src/state';
 import { TestContext } from './util';
 
 describe('StandardStateBuilder', function () {
     let contextClass: Class<TestContext> = TestContext,
+        executor: Executor<TestContext> = sinon.stub(),
+        executorFactory: ExecutorFactory<TestContext>
+            = sinon.stub().returns(executor),
         stateBuilder: StateBuilder<TestContext>,
-        stateId: StateId = 'some-state-id',
-        transition: Transition<TestContext> = sinon.stub(),
-        transitionFactory: TransitionFactory<TestContext>
-            = sinon.stub().returns(transition);
+        stateId: StateId = 'some-state-id';
 
     beforeEach(function () {
         stateBuilder = new StandardStateBuilder(TestContext);
@@ -29,7 +28,7 @@ describe('StandardStateBuilder', function () {
 
             beforeEach(function() {
                 state = stateBuilder.id(stateId)
-                    .transition(transitionFactory)
+                    .executor(executorFactory)
                     .build();
             });
 
@@ -38,15 +37,15 @@ describe('StandardStateBuilder', function () {
             });
 
             describe('the state', function() {
-                describe('#id', function() {
-                    it('is equal to the state id value provided to the state builder', function() {
-                        expect(state.id()).to.equal(stateId);
+                describe('#executor', function() {
+                    it('is equal to the executor created by the supplied executor factory', function() {
+                        expect(state.executor()).to.equal(executor);
                     });
                 });
 
-                describe('#transition', function() {
-                    it('is equal to the transition created by the supplied transition factory', function() {
-                        expect(state.transition()).to.equal(transition);
+                describe('#id', function() {
+                    it('is equal to the state id value provided to the state builder', function() {
+                        expect(state.id()).to.equal(stateId);
                     });
                 });
 
@@ -55,16 +54,16 @@ describe('StandardStateBuilder', function () {
                         stateIds: Array<StateId> = [];
 
                     before(function() {
-                        transitionFactory.callsFake(function(stateIdRegistry: StateIdRegistry) {
+                        executorFactory.callsFake(function(stateIdRegistry: StateIdRegistry) {
                             stateNames.forEach(name => {
                                 stateIds.push(stateIdRegistry.get(name));
                             });
 
-                            return transition;
+                            return executor;
                         });
                     });
 
-                    it('returns all and only the states registered by the transition factory', function() {
+                    it('returns all and only the states registered by the executor factory', function() {
                         expect(state.transitionsTo()).to.have.lengthOf(stateIds.length);
                         state.transitionsTo().forEach((stateId, i) => {
                             expect(stateId).to.equal(stateIds[i]);
@@ -74,24 +73,34 @@ describe('StandardStateBuilder', function () {
             });
         });
 
+        context('when no executor has been supplied', function() {
+            beforeEach(function() {
+                stateBuilder.id(stateId);
+            });
+
+            it('throws an MissingExecutorError', function() {
+                expect(() => stateBuilder.build()).to.throw(MissingExecutorError);
+            });
+        });
+
         context('when no id has been supplied', function() {
             beforeEach(function() {
-                stateBuilder.transition(transitionFactory);
+                stateBuilder.executor(executorFactory);
             });
 
             it('throws an MissingIdError', function() {
                 expect(() => stateBuilder.build()).to.throw(MissingIdError);
             });
         });
+    });
 
-        context('when no transition has been supplied', function() {
-            beforeEach(function() {
-                stateBuilder.id(stateId);
-            });
+    describe('#executor', function () {
+        it('returns its instance', function() {
+            expect(stateBuilder.executor(executorFactory)).to.equal(stateBuilder);
+        });
 
-            it('throws an MissingTransitionError', function() {
-                expect(() => stateBuilder.build()).to.throw(MissingTransitionError);
-            });
+        it('invokes the supplied executor factory', function() {
+            expect(executorFactory.called).to.be.true;
         });
     });
 
@@ -104,16 +113,6 @@ describe('StandardStateBuilder', function () {
     describe('#initial', function () {
         it('returns its instance', function() {
             expect(stateBuilder.initial()).to.equal(stateBuilder);
-        });
-    });
-
-    describe('#transition', function () {
-        it('returns its instance', function() {
-            expect(stateBuilder.transition(transitionFactory)).to.equal(stateBuilder);
-        });
-
-        it('invokes the supplied transition factory', function() {
-            expect(transitionFactory.called).to.be.true;
         });
     });
 });

@@ -10,14 +10,20 @@ import { TestContext } from './util';
 
 describe('StandardState', function () {
     let contextClass: Class<TestContext> = TestContext,
+        executor = (context: TestContext) => stateId,
         initial = false,
         state: State<TestContext>,
         stateId: StateId = 'state-id',
-        transition = (context: TestContext) => stateId,
         transitionsTo = ['some-other-state-id', 'yet-another-state-id'];
 
     beforeEach(function() {
-        state = new StandardState(contextClass, stateId, initial, transition, transitionsTo);
+        state = new StandardState(contextClass, executor, stateId, initial, transitionsTo);
+    });
+
+    describe('#executor', function () {
+        it('equals the value assigned at construction', function() {
+            expect(state.executor()).to.equal(executor);
+        });
     });
 
     describe('#id', function () {
@@ -47,12 +53,6 @@ describe('StandardState', function () {
                     expect(state.initial()).to.equal(initialValue);
                 });
             });
-        });
-    });
-
-    describe('#transition', function () {
-        it('equals the value assigned at construction', function() {
-            expect(state.transition()).to.equal(transition);
         });
     });
 
