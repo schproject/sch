@@ -20,7 +20,15 @@ export class StandardMachine<T> implements Machine<T> {
         this._states = states;
     }
 
+    initialState (): State<T> {
+        return this._initialState;
+    }
+
     run (context: T) {
+    }
+
+    states (): $ReadOnlyArray<State<T>> {
+        return this._states;
     }
 }
 

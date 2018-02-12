@@ -27,7 +27,9 @@ export interface StateBuilder<T> {
 }
 
 export interface Machine<T> {
+    +initialState: (void) => State<T>;
     +run: (context: T) => void;
+    +states: (void) => $ReadOnlyArray<State<T>>;
 }
 
 export interface MachineBuilder<T> {

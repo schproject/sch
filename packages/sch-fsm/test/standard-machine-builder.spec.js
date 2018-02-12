@@ -7,7 +7,7 @@ import sinon from 'sinon';
 
 import { DuplicateStateIdError, IllegalTransitionError,
     MissingInitialStateError, MultipleInitialStatesError } from '../src/errors';
-import type { MachineBuilder, State, StateId } from '../src/types';
+import type { Machine, MachineBuilder, State, StateId } from '../src/types';
 import { StandardState } from '../src/state';
 import { StandardMachineBuilder } from '../src/machine';
 import { TestContext, configure } from './util';
@@ -21,6 +21,51 @@ describe('StandardMachineBuilder', function() {
     });
 
     describe('#build', function() {
+        context('when all components have been provided and are valid', function() {
+            const stateId1: StateId = 'some-state-id-1',
+                stateId2: StateId = 'some-state-id-2',
+                state1: State<TestContext>
+                    = configure(sinon.createStubInstance(StandardState), function(stub) {
+                        stub.id.returns(stateId1);
+                        stub.initial.returns(true);
+                        stub.transitionsTo.returns([stateId2]);
+                    }),
+                state2: State<TestContext>
+                    = configure(sinon.createStubInstance(StandardState), function(stub) {
+                        stub.id.returns(stateId2);
+                        stub.initial.returns(false);
+                        stub.transitionsTo.returns([stateId1]);
+                    });
+
+            let machine: Machine<TestContext>;
+
+            beforeEach(function() {
+                machineBuilder.state(state1).state(state2);
+            });
+
+            it('returns a machine', function() {
+                machine = machineBuilder.build();
+            });
+
+            describe('the machine', function() {
+                describe('#initialState', function() {
+                    it('is equal to the initial state provided to the machine builder', function() {
+                        expect(machine.initialState()).to.equal(state1);
+                    });
+                });
+
+                describe('#states', function() {
+                    it('contains all and only the states provided to the machine builder', function() {
+                        const states = machine.states();
+
+                        expect(states).to.have.lengthOf(2);
+                        expect(states[0]).to.equal(state1);
+                        expect(states[1]).to.equal(state2);
+                    });
+                });
+            });
+        });
+
         context('when an initial state has not been provided', function() {
             const stateId: StateId = 'some-state-id',
                 state: State<TestContext>
